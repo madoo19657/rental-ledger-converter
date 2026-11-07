@@ -120,6 +120,7 @@ table.t.grid tr.wrow td{background:#fffaeb}table.t.grid .wred{color:var(--err);f
 .rfoot{border-top:1px solid var(--line);margin-top:44px;padding-top:26px;text-align:center}.rfoot p{margin:0;font-size:11.5px;color:var(--sub);max-width:520px;margin-inline:auto}
 .tagbtn{border:0;cursor:pointer;font-family:inherit}.tagbtn:hover{background:#d5dbe2}
 dialog.rule{border:0;border-radius:18px;padding:0;max-width:560px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(16,24,40,.25);color:var(--ink)}
+dialog.err{max-width:420px}.rule.err .em{margin:0 0 14px;font-size:15px;line-height:1.7}.rule.err .rh h2{color:#b42318}
 dialog.rule::backdrop{background:rgba(15,23,42,.45)}
 .rule .rh{display:flex;justify-content:space-between;align-items:center;padding:20px 24px 0}
 .rule .rh h2{margin:0;font-size:19px;color:var(--navy)}
@@ -596,9 +597,9 @@ const screens = {
       : `입력한 값 기준으로는 <b>어긋남이 없습니다.</b> 입력값이 맞는지, 다른 공제 항목은 별도로 확인하세요.`;
     const candRows = P.cands.map((c) => { const past = c.state === 'past'; const yr = P.selSim.years.find((y) => y.year === c.year);
       const isDone = (S.claimDone || []).includes(c.year);
-      const val = yr && yr.isClaim ? fmt(yr.applied) : '';
+      const val = yr && yr.isClaim && yr.applied > yr.actual ? fmt(yr.applied - yr.actual) : '';
       const amt = past ? '<span class="dim">-</span>' : `<div class="amtbox"><input class="amt" type="text" inputmode="numeric" data-amt="${c.year}" value="${val}" placeholder="금액 입력" aria-label="${c.year}년 공제금액 입력"><span>원</span></div>${S.amtMsg && S.amtMsg.year === c.year ? `<small><b class="bad">${S.amtMsg.text}</b></small>` : ''}`;
-      return `<tr class="${past ? 'unk' : ''}"><td class="ck"><span class="rc2 ${isDone ? 'g' : 'n'}">${isDone ? '제출완료' : '미제출'}</span></td><td>${c.year}</td><td>${fmt(c.income)}</td><td>${fmt(c.actual)}</td><td class="mx">${fmt(yr ? yr.possible : c.possible)}</td><td class="cur">${amt}</td><td class="cd">${past ? '<span class="dim">기한 지남</span>' : `<button type="button" class="rowbtn" data-claim="${c.year}" ${val ? '' : 'disabled'}>${isDone ? '다시 보기' : '청구하기'}</button>`}</td></tr>`; }).join('');
+      return `<tr class="${past ? 'unk' : ''}"><td class="ck"><span class="rc2 ${isDone ? 'g' : 'n'}">${isDone ? '제출완료' : '미제출'}</span></td><td>${c.year}</td><td>${fmt(c.income)}</td><td>${fmt(c.actual)}</td><td class="mx">${fmt(Math.max(0, c.income - c.actual))}</td><td class="cur">${amt}</td><td class="cd">${past ? '<span class="dim">기한 지남</span>' : `<button type="button" class="rowbtn" data-claim="${c.year}" ${val ? '' : 'disabled'}>${isDone ? '다시 보기' : '청구하기'}</button>`}</td></tr>`; }).join('');
     const incr = P.selSim.years.filter((y) => y.isClaim).reduce((s, y) => s + y.applied - y.actual, 0);
     const maxSum = P.selSim.years.filter((y) => y.isClaim).reduce((s, y) => s + y.applied, 0);
     const cy = P.act;
@@ -853,7 +854,12 @@ function bind() {
   const bindCopy = () => $app.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', () => copyText(COPY[b.dataset.copy] || '', b)));
   if (step === 5) {
     on('#next', () => go(7)); on('#fix', () => { S.yIdx = 0; go(3); });
-    const commitAmt = (y, raw) => { const v = parseAmt(raw); S.claimAmt = Object.assign({}, S.claimAmt, { [y]: v == null || v <= 0 ? '' : v }); return v; };
+    const candOf = (y) => planInfo().cands.find((c) => c.year === y);
+    const commitAmt = (y, raw) => {
+      const v = parseAmt(raw), c = candOf(y), act = c ? c.actual : 0;
+      S.claimAmt = Object.assign({}, S.claimAmt, { [y]: v == null || v <= 0 ? '' : act + v });
+      return v;
+    };
     $app.querySelectorAll('[data-claim]').forEach((b) => {
       b.addEventListener('mousedown', (e) => e.preventDefault());   // 금액 칸의 포커스를 유지해 클릭이 사라지지 않게
       b.addEventListener('click', () => {
@@ -869,8 +875,17 @@ function bind() {
       inp.addEventListener('input', () => { const b = inp.closest('tr').querySelector('[data-claim]'); const v = parseAmt(inp.value); if (b) b.disabled = v == null || v <= 0; });
       inp.addEventListener('change', () => {
         const y = +inp.dataset.amt, P0 = planInfo(), yr = P0.selSim.years.find((z) => z.year === y);
-        const v = commitAmt(y, inp.value); S.amtMsg = undefined;
-        if (yr && v != null && v > 0) { if (v > yr.possible) S.amtMsg = { year: y, text: '최대 금액까지만 입력할 수 있습니다' }; else if (v < yr.actual) S.amtMsg = { year: y, text: '신고서 반영 금액보다 적게 입력할 수 없습니다' }; }
+        const v = parseAmt(inp.value), c = candOf(y), act = c ? c.actual : 0, room = c ? Math.max(0, c.income - act) : 0;
+        const cap = yr ? Math.max(0, Math.min(room, yr.possible - act)) : room;
+        S.amtMsg = undefined;
+        if (v != null && v > 0 && v > cap) {
+          S.claimAmt = Object.assign({}, S.claimAmt, { [y]: '' });
+          const text = v > room ? `입력한 공제할 이월결손금 ${fmt(v)}원이 공제가능금액 ${fmt(room)}원보다 큽니다.<br>${fmt(room)}원 이하로 입력하세요.` : `남은 이월결손금으로는 ${y}년에 최대 ${fmt(cap)}원까지 공제할 수 있습니다.<br>${fmt(cap)}원 이하로 입력하세요.`;
+          const sy = window.scrollY; render(); window.scrollTo(0, sy);
+          showError(`${y}년 공제금액 오류`, text);
+          return;
+        }
+        commitAmt(y, inp.value);
         const sy = window.scrollY; render(); window.scrollTo(0, sy);
       });
     });
@@ -915,6 +930,21 @@ function ruleHtml() {
     <li>2018년 이전 발생분의 기한은 이 도구에서 계산하지 않습니다(2차 자료상 2009년분부터 10년으로 알려져 있으나 미확인).</li></ul>
     <div class="box warn" style="margin:12px 0 0;font-size:13px">법령 원문 중 개정 부칙은 아직 직접 확인하지 못했습니다. 청구나 신고 전에 세무사에게 확인하세요.</div>
     <div class="src">근거: 소득세법 제45조 제2~4항 · 확인일 2026-11-03 · <a href="https://casenote.kr/%EB%B2%95%EB%A0%B9/%EC%86%8C%EB%93%9D%EC%84%B8%EB%B2%95/%EC%A0%9C45%EC%A1%B0" target="_blank" rel="noopener">조문 보기</a></div>`;
+}
+function showError(title, html) {
+  let d = document.getElementById('errDlg');
+  if (!d) {
+    d = document.createElement('dialog'); d.id = 'errDlg'; d.className = 'rule err';
+    d.innerHTML = '<div class="rh"><h2></h2><button type="button" class="x" aria-label="닫기">×</button></div><div class="rb"><p class="em"></p><div class="row-btn"><button type="button" class="btn primary" id="errOk">확인</button></div></div>';
+    const close = () => d.close();
+    d.querySelector('.x').addEventListener('click', close);
+    d.querySelector('#errOk').addEventListener('click', close);
+    d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+    document.body.appendChild(d);
+  }
+  d.querySelector('h2').textContent = title;
+  d.querySelector('.em').innerHTML = html;
+  d.showModal();
 }
 function openRule() {
   let d = document.getElementById('ruleDlg');
