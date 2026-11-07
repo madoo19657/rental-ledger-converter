@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>이월결손금 환급 점검 | 장부선생</title>
+<title>이월결손금 환급점검 | 장부선생</title>
 <!--
-  장부선생 환급 점검 웹 페이지 시안 (단일 파일, 서버 없음).
+  장부선생 이월결손금 환급점검 웹 페이지 시안 (단일 파일, 서버 없음).
   UX Pilot 시안(0~8단계)을 반영하고 docs/PRD-refund-check.md 규칙에 맞춰 고쳤다.
   계산부는 src/refund-check.js의 복사본이다(프로토타입용). 규칙 값은 config/loss-carryover-rules.json과 같고 확인 전 값이다.
   입력값은 브라우저 안에서만 쓰며 서버로 보내지 않는다. 체험 값은 가상이다.
@@ -502,7 +502,7 @@ const screens = {
   0() {
     return `<div class="card">
       <div class="eyebrow">상가(상업용 부동산) 임대사업자용</div>
-      <h1>놓친 이월결손금 찾기</h1>
+      <h1>이월결손금 환급점검</h1>
       <p class="lead">종합소득세 신고서의 <b>임대소득</b>을 확인하여 남은 이월결손금과 <b>경정청구 방법</b>을 안내합니다.</p>
       <div class="principle"><h2>이월결손금 공제 원리</h2>
         <div class="pstep"><span class="dot" style="background:#fde2e0;color:#c0392b">↓</span><div><b>1. 손실 발생</b><small>상가 임대 소득이 적자로 나온 해</small></div></div>
@@ -811,7 +811,7 @@ function render() {
   $app.style.maxWidth = S.step === 5 ? '920px' : S.step === 7 ? '760px' : '600px';
   const fl = document.getElementById('discTxt'); if (fl) fl.style.display = S.step === 7 ? 'none' : '';
   document.getElementById('barFill').style.width = (progress() * 100).toFixed(1) + '%';
-  document.title = `${STEP_TITLES[S.step]} | 환급 점검 - 장부선생`;
+  document.title = `${STEP_TITLES[S.step]} | 이월결손금 환급점검 - 장부선생`;
   const h = $app.querySelector('h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
   bind();
 }
