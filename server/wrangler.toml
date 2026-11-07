@@ -13,4 +13,4 @@ id = "0ee5f32cc998444ca44311a3c2edaec6"
 
 [vars]
 # 체험 화면이 올라간 주소(CORS 허용). 예: "https://내도메인.example"
-ALLOWED_ORIGIN = "https://jangbu-license.janny-kim72.workers.dev"
+ALLOWED_ORIGIN = "https://jangbu-license.madoo.workers.dev"

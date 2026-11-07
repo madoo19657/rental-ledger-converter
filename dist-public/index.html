@@ -1332,7 +1332,7 @@ if (!E) {
 }
 var EDITION = "public"; // 'public'(체험 버전) | 'private'(개인 빌드, 잠금 없음)
 var APP_VERSION = "0.1.0";
-var LICENSE_ENDPOINT = ""; // 이용권 확인 서버 주소(Phase 1). 비어 있으면 확인할 수 없다
+var LICENSE_ENDPOINT = "https://jangbu-license.madoo.workers.dev"; // 이용권 확인 서버 주소(Phase 1). 비어 있으면 확인할 수 없다
 var PURCHASE_URL = "#";
 var DEFAULTS = {"year":2025,"site":"사업장1","vatMode":"exclude","deemedRentMode":"recompute","building":{"cost":300000000,"acquiredOn":"2020-01-01","usefulLifeYears":40,"residualRate":0.1,"accumDepOpening":0,"totalArea":1,"depositArea":1,"landCost":0},"openingBalances":{"cash":0,"deposit":20000000,"loans":[{"lender":"은행","principal":100000000}]},"deposits":[{"date":"2025-01-01","amount":20000000}],"depositInterestIncome":0,"ownerFlows":[],"loanRepayments":[],"credit":null,"assumptions":["예시용 임시값입니다(건물 3억 원, 보증금 2천만 원, 대출 1억 원 등). 모두 실제 값으로 바꾸세요.","기초 현금 0원, 사업주 인출·투입 없음, 부가세는 제외(공급가액 기준): 가정","연면적 = 보증금 받은 면적(비율 1): 가정"],"industryCode":"701201","filingType":"11"};
 var PARAMS = {"year":2025,"deemedRentRate":0.031,"bookkeepingCredit":{"rate":0.2,"cap":1000000},"standardTaxCredit":70000,"source":"이자율 3.10%는 첨부 신고서(별지 제53호)의 값. 기장세액공제율·한도는 별지 제10호의3 서식. 표준세액공제 70,000원은 신고서(S1) 세액공제명세서와 블로그(S12)의 사업소득만 있는 경우. 법령 조문은 세무사 확인 전."};

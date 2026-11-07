@@ -34,7 +34,7 @@ JANGBU_API=http://localhost:8787 JANGBU_ADMIN_TOKEN=dev-admin node scripts/licen
 5. 유료 계산 모듈 묶기: `node scripts/build-server.js` (`src/engine-paid.js` → `server/paid-module.gen.mjs`, 저장소에 올리지 않음). **계산 코드를 고칠 때마다 다시 실행하고 다시 배포한다.**
 6. 배포(체험 화면 포함, 한 번에): `JANGBU_SERVER_URL=https://jangbu-license.<계정>.workers.dev node scripts/deploy-server.js` (공개 빌드 → 개인 값 검사 → 모듈 묶기 → `server/public` 복사 → `wrangler deploy`). 체험 화면은 같은 주소의 `/`에서 나온다. 화면·계산 코드를 고칠 때마다 다시 실행한다.
 
-> 2026-11-01 배포함: 서버·체험 화면 `https://jangbu-license.janny-kim72.workers.dev`. Pages는 생성 오류(8000000)로 쓰지 않았다. → 나온 주소(예: `https://jangbu-license.<계정>.workers.dev`).
+> 2026-11-01 배포함(2026-11-07 workers.dev 계정 이름을 madoo로 바꿔 주소 변경): 서버·체험 화면 `https://jangbu-license.madoo.workers.dev`. Pages는 생성 오류(8000000)로 쓰지 않았다. → 나온 주소(예: `https://jangbu-license.<계정>.workers.dev`).
 6. 화면을 그 주소로 빌드한다: `JANGBU_LICENSE_ENDPOINT=https://... node scripts/build.js --public` 후 `node scripts/check-public.js`.
 7. 발급: `JANGBU_API=https://... JANGBU_ADMIN_TOKEN=... node scripts/license-admin.js issue --email 구매자@example.com --note 주문번호`
 
