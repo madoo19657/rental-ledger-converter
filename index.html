@@ -598,7 +598,7 @@ const screens = {
     const candRows = P.cands.map((c) => { const past = c.state === 'past'; const yr = P.selSim.years.find((y) => y.year === c.year);
       const isDone = (S.claimDone || []).includes(c.year);
       const val = yr && yr.isClaim && yr.applied > yr.actual ? fmt(yr.applied - yr.actual) : '';
-      const amt = past ? '<span class="dim">-</span>' : `<div class="amtbox"><input class="amt" type="text" inputmode="numeric" data-amt="${c.year}" value="${val}" placeholder="금액 입력" aria-label="${c.year}년 공제금액 입력"><span>원</span></div>${S.amtMsg && S.amtMsg.year === c.year ? `<small><b class="bad">${S.amtMsg.text}</b></small>` : ''}`;
+      const amt = past ? '<span class="dim">-</span>' : `<div class="amtbox"><input class="amt" type="text" inputmode="numeric" data-amt="${c.year}" value="${val}" placeholder="0" aria-label="${c.year}년 공제금액 입력"><span>원</span></div>${S.amtMsg && S.amtMsg.year === c.year ? `<small><b class="bad">${S.amtMsg.text}</b></small>` : ''}`;
       return `<tr class="${past ? 'unk' : ''}"><td class="ck"><span class="rc2 ${isDone ? 'g' : 'n'}">${isDone ? '제출완료' : '미제출'}</span></td><td>${c.year}</td><td>${fmt(c.income)}</td><td>${fmt(c.actual)}</td><td class="mx">${fmt(Math.max(0, c.income - c.actual))}</td><td class="cur">${amt}</td><td class="cd">${past ? '<span class="dim">기한 지남</span>' : `<button type="button" class="rowbtn" data-claim="${c.year}" ${val ? '' : 'disabled'}>${isDone ? '다시 보기' : '청구하기'}</button>`}</td></tr>`; }).join('');
     const incr = P.selSim.years.filter((y) => y.isClaim).reduce((s, y) => s + y.applied - y.actual, 0);
     const maxSum = P.selSim.years.filter((y) => y.isClaim).reduce((s, y) => s + y.applied, 0);
