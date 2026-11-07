@@ -131,6 +131,19 @@ table.t.grid tr.wrow td{background:#fffaeb}table.t.grid .wred{color:var(--err);f
   table.t.cand td.cd{padding-top:8px}table.t.cand td.cd .rowbtn{width:100%;padding:12px}
   .amt{width:140px}
 }
+@media screen and (max-width:640px){
+  .tablewrap:has(table.grid),.tablewrap:has(table.ledger){overflow:visible}
+  table.t.grid,table.t.ledger{display:block;border:0}
+  table.t.grid thead,table.t.ledger thead{display:none}
+  table.t.grid tbody,table.t.ledger tbody{display:block}
+  table.t.grid tr,table.t.ledger tr{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 8px;background:#fff}
+  table.t.grid td,table.t.ledger td{display:block;border:0;padding:4px 0;text-align:left;font-size:14.5px;min-width:0}
+  table.t.grid td[data-label]::before,table.t.ledger td[data-label]::before{content:attr(data-label);display:block;color:var(--sub);font-weight:500;font-size:11.5px}
+  table.t.grid td:first-child,table.t.ledger td:first-child{grid-column:1/-1;font-weight:800;color:var(--navy);font-size:15.5px}
+  table.t.grid td:first-child::before,table.t.ledger td:first-child::before{display:none}
+  table.t.grid tr.wrow,table.t.grid tr.wrow td{background:#fffaeb}
+  table.t.grid tr.tot,table.t.ledger tr.tot{background:#eef2f6}
+}
 dialog.rule{border:0;border-radius:18px;padding:0;max-width:560px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(16,24,40,.25);color:var(--ink)}
 dialog.err{max-width:420px}.rule.err .em{margin:0 0 14px;font-size:15px;line-height:1.7}.rule.err .rh h2{color:#b42318}
 dialog.rule::backdrop{background:rgba(15,23,42,.45)}
@@ -817,6 +830,16 @@ function updateHeader() {
   const pr = document.getElementById('hPrint'); if (pr) pr.onclick = () => window.print();
 }
 document.getElementById('hBack').addEventListener('click', () => goBack());
+// 좁은 화면에서 표를 카드로 보여 줄 때 쓸 칸 이름을 각 칸에 붙인다
+function labelTables() {
+  document.querySelectorAll('table.t.grid, table.t.ledger').forEach((t) => {
+    const heads = [...t.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+    t.querySelectorAll('tbody tr').forEach((tr) => {
+      let col = 0;
+      [...tr.children].forEach((td) => { if (heads[col]) td.setAttribute('data-label', heads[col]); col += td.colSpan || 1; });
+    });
+  });
+}
 function render() {
   $app.innerHTML = screens[S.step]();
   updateHeader();
@@ -825,6 +848,7 @@ function render() {
   document.getElementById('barFill').style.width = (progress() * 100).toFixed(1) + '%';
   document.title = `${STEP_TITLES[S.step]} | 이월결손금 환급점검 - 장부선생`;
   const h = $app.querySelector('h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+  labelTables();
   bind();
 }
 const $q = (s) => $app.querySelector(s);
