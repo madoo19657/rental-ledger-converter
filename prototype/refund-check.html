@@ -380,6 +380,17 @@ function kr(n) {
   return sign + [eok ? eok + '억' : '', man ? fmt(man) + '만' : '', (!eok && !man) ? fmt(a) : ''].filter(Boolean).join(' ') + '원';
 }
 const parseAmt = (v) => { const t = String(v).replace(/[,\s원]/g, '').replace(/[−–]/g, '-'); if (t === '' || t === '-') return null; const n = Number(t); return Number.isFinite(n) ? Math.round(n) : null; };
+// 입력하는 동안 천 단위 쉼표를 넣고 커서 위치를 유지한다 (음수 기호는 앞에서만 허용)
+const liveFmt = (inp) => {
+  const raw = inp.value, pos = inp.selectionStart == null ? raw.length : inp.selectionStart;
+  const before = raw.slice(0, pos).replace(/\D/g, '').length, neg = /^\s*[-−–]/.test(raw), digits = raw.replace(/\D/g, '');
+  if (!digits) { inp.value = neg ? '-' : ''; return; }
+  const out = (neg ? '-' : '') + Number(digits).toLocaleString('ko-KR');
+  inp.value = out;
+  let c = 0, k = before === 0 ? (neg ? 1 : 0) : 0;
+  if (before > 0) for (k = 0; k < out.length; k++) { if (/\d/.test(out[k])) c++; if (c === before) { k++; break; } }
+  try { inp.setSelectionRange(k, k); } catch (e) { /* 일부 입력 종류는 커서 이동을 지원하지 않는다 */ }
+};
 const yearsList = () => { const a = []; for (let y = S.start; y <= S.end; y++) a.push(y); return a; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const inputRows = () => yearsList().map((y) => { const d = S.data[y] || {}; return { year: y, income: d.unknown ? null : (d.income ?? null), claimed: d.claimed ?? null, balance: d.balance ?? null, paid: d.paid ?? null }; });
@@ -833,6 +844,7 @@ function bind() {
     $app.querySelectorAll('input[data-k]').forEach((inp) => {
       const k = inp.dataset.k, hint = $q('#h_' + k);
       inp.addEventListener('input', () => {
+        liveFmt(inp);
         const v = parseAmt(inp.value); d[k] = v; if (v != null) d.unknown = false;
         hint.textContent = v == null ? FIELDS[k].hint : kr(v); hint.className = 'hint' + (v != null && v < 0 ? ' neg' : '');
         upd();
@@ -872,7 +884,7 @@ function bind() {
     $app.querySelectorAll('[data-amt]').forEach((inp) => {
       inp.addEventListener('focus', () => inp.select());
       inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
-      inp.addEventListener('input', () => { const b = inp.closest('tr').querySelector('[data-claim]'); const v = parseAmt(inp.value); if (b) b.disabled = v == null || v <= 0; });
+      inp.addEventListener('input', () => { liveFmt(inp); const b = inp.closest('tr').querySelector('[data-claim]'); const v = parseAmt(inp.value); if (b) b.disabled = v == null || v <= 0; });
       inp.addEventListener('change', () => {
         const y = +inp.dataset.amt, P0 = planInfo(), yr = P0.selSim.years.find((z) => z.year === y);
         const v = parseAmt(inp.value), c = candOf(y), act = c ? c.actual : 0, room = c ? Math.max(0, c.income - act) : 0;
