@@ -1,0 +1,16 @@
+# Cloudflare Workers 설정 (비밀값은 이 파일에 쓰지 않는다 — 아래 README의 wrangler secret 사용)
+name = "jangbu-license"
+main = "worker.mjs"
+compatibility_date = "2024-11-01"
+
+# 체험 화면(공개 빌드)을 같은 주소에서 내려준다. scripts/deploy-server.js가 server/public을 채운다
+[assets]
+directory = "./public"
+
+[[kv_namespaces]]
+binding = "LICENSES"
+id = "0ee5f32cc998444ca44311a3c2edaec6"
+
+[vars]
+# 체험 화면이 올라간 주소(CORS 허용). 예: "https://내도메인.example"
+ALLOWED_ORIGIN = "https://jangbu-license.janny-kim72.workers.dev"

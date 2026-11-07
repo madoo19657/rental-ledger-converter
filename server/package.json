@@ -1,0 +1,11 @@
+{
+  "name": "jangbu-license-server",
+  "private": true,
+  "description": "장부선생 이용권 서버 배포 도구(wrangler) 설치용",
+  "scripts": {
+    "deploy": "node ../scripts/deploy-server.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.86.0"
+  }
+}

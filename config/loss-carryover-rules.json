@@ -1,0 +1,13 @@
+{
+  "status": "확인 필요",
+  "note": "법령 조문을 직접 확인하지 못했다. 알려진 일반 내용을 바탕으로 한 가정이며, 판매 전에 세무사 확인으로 값과 출처를 채운다(PRD-refund-check R0).",
+  "confirmedOn": null,
+  "source": null,
+  "scope": "부동산임대업(주택임대업 제외) 사업소득의 결손금은 같은 임대업 소득에서만 공제한다",
+  "order": "발생 연도가 오래된 것부터 공제한다",
+  "carryYears": [
+    { "fromYear": 2018, "toYear": 2019, "years": 10 },
+    { "fromYear": 2020, "years": 15 }
+  ],
+  "unverifiedBeforeYear": 2018
+}

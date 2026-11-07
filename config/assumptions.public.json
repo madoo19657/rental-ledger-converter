@@ -1,0 +1,43 @@
+{
+  "year": 2025,
+  "site": "사업장1",
+  "vatMode": "exclude",
+  "deemedRentMode": "recompute",
+  "building": {
+    "cost": 300000000,
+    "acquiredOn": "2020-01-01",
+    "usefulLifeYears": 40,
+    "residualRate": 0.1,
+    "accumDepOpening": 0,
+    "totalArea": 1,
+    "depositArea": 1,
+    "landCost": 0
+  },
+  "openingBalances": {
+    "cash": 0,
+    "deposit": 20000000,
+    "loans": [
+      {
+        "lender": "은행",
+        "principal": 100000000
+      }
+    ]
+  },
+  "deposits": [
+    {
+      "date": "2025-01-01",
+      "amount": 20000000
+    }
+  ],
+  "depositInterestIncome": 0,
+  "ownerFlows": [],
+  "loanRepayments": [],
+  "credit": null,
+  "assumptions": [
+    "예시용 임시값입니다(건물 3억 원, 보증금 2천만 원, 대출 1억 원 등). 모두 실제 값으로 바꾸세요.",
+    "기초 현금 0원, 사업주 인출·투입 없음, 부가세는 제외(공급가액 기준): 가정",
+    "연면적 = 보증금 받은 면적(비율 1): 가정"
+  ],
+  "industryCode": "701201",
+  "filingType": "11"
+}

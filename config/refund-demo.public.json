@@ -1,0 +1,13 @@
+{
+  "title": "가상 시나리오: 결손이 두 해 나고, 이후 공제가 빠진 임대사업자",
+  "note": "실제 데이터가 아닌 예시입니다.",
+  "years": [
+    { "year": 2019, "income": -30000000, "claimed": 0, "balance": 30000000 },
+    { "year": 2020, "income": -10000000, "claimed": 0, "balance": 40000000 },
+    { "year": 2021, "income": 5000000, "claimed": 5000000, "balance": 35000000 },
+    { "year": 2022, "income": 8000000, "claimed": 0, "balance": 35000000 },
+    { "year": 2023, "income": 12000000, "claimed": 12000000, "balance": 23000000 },
+    { "year": 2024, "income": 7000000, "claimed": 7000000, "balance": 16000000 },
+    { "year": 2025, "income": 9000000, "claimed": 0, "balance": 16000000 }
+  ]
+}

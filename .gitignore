@@ -1,0 +1,15 @@
+# 개인 세금 자료: 옵시디언 볼트로 연결된 정션과 실제 금액 샘플은 저장소에 올리지 않는다
+docs-private/
+samples/case-b-site1.csv
+# 빌드 중간물·임시
+node_modules/
+*.tmp
+
+# --- 개인 값이 든 파일(공개 저장소에 올리지 않는다) ---
+config/*.private.*
+tests-private/
+scripts-private/
+dist/
+server/paid-module.gen.mjs
+server/public/
+server/node_modules/

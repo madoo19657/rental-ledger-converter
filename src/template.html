@@ -1,0 +1,1745 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>장부선생 — 간편장부를 복식부기로</title>
+<link rel="icon" href="/*__FAVICON__*/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+/* ───────── 디자인 토큰 ─────────
+   네이버 블로그 서식 기준(나눔고딕, 회녹색 포인트, 채도 높은 초록 지양)을 따르되
+   금융·세무 도구에 맞게 위계·여백·대비를 정리했다. */
+:root {
+  --bg: #f3f5f4; --card: #fff; --ink: #26302c; --muted: #65726d;
+  --line: #dde3e0; --line-strong: #c4cdc9;
+  --accent: #3f5d54; --accent-hover: #324b43; --accent-ink: #fff; --accent-soft: #e8efec;
+  --box: #f5f8f6; --box-line: #e2e8e5;
+  --warn-bg: #fff7ec; --warn-line: #f2c48a; --warn-ink: #5a3b10;
+  --err: #b3261e; --err-soft: #fdeceb; --ok: #3f5d54; --assumed: #fff3d9;
+  color-scheme: light;
+  --radius: 12px; --shadow: 0 1px 2px rgba(20,40,32,.05), 0 6px 18px rgba(20,40,32,.05);
+  --font: "Nanum Gothic", "나눔고딕", "Malgun Gothic", -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131716; --card: #1b201e; --ink: #e6ebe9; --muted: #9fabA7;
+    --line: #333c39; --line-strong: #4a5551;
+    --accent: #8fb0a4; --accent-hover: #a9c4ba; --accent-ink: #0f1a16; --accent-soft: #24302c;
+    --box: #222826; --box-line: #333c39;
+    --warn-bg: #3a3222; --warn-line: #8a7424; --warn-ink: #f1dcb8;
+    --err: #ff8a80; --err-soft: #3a2220; --ok: #a9c4ba; --assumed: #3a3320;
+    --shadow: 0 1px 2px rgba(0,0,0,.3);
+    color-scheme: dark;
+  }
+}
+
+/* ───────── 기본 ───────── */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.7 var(--font); letter-spacing: -0.01em;
+  word-break: keep-all; overflow-wrap: anywhere; /* 한글은 어절 단위로 줄바꿈 */
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 960px; margin: 0 auto; padding: 0 20px 56px; }
+h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
+h2 { font-size: 20px; font-weight: 800; margin-bottom: 14px; padding-left: 12px; border-left: 5px solid var(--accent); line-height: 1.35; }
+h3, h4 { color: var(--accent); font-weight: 800; }
+.muted { color: var(--muted); }
+.ok { color: var(--ok); font-weight: 700; }
+.bad { color: var(--err); font-weight: 700; }
+.hidden { display: none !important; }
+.viewhide { display: none !important; }
+@media print { #s3.viewhide:not(.hidden) { display: block !important; } }
+.stepnav { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 0 0 10px; }
+.stepnav .link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 700; cursor: pointer; text-decoration: underline; }
+.scroll { overflow-x: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+a { color: var(--accent); font-weight: 700; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; border-radius: 6px; }
+
+/* ───────── 머리말 ───────── */
+.hero { padding: 36px 0 6px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo { width: 56px; height: 56px; display: block; flex: none; }
+.logo svg { width: 100%; height: 100%; display: block; }
+h1 { font-size: 28px; font-weight: 800; line-height: 1.25; }
+.tagline { margin: 12px 0 0; color: var(--muted); font-size: 16.5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); border: 1px solid transparent; }
+.sitelbl { display: block; font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.sitebtns { display: flex; flex-wrap: wrap; gap: 8px; }
+.sitebtn { min-height: 38px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line, #ccc); background: transparent; color: inherit; font-weight: 700; cursor: pointer; }
+.sitebtn span { font-weight: 400; opacity: .7; margin-left: 4px; }
+.sitebtn.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.chip.warn { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+.disclaimer { margin: 12px 0 0; }
+.disclaimer summary { cursor: pointer; font-size: 14px; color: var(--muted); font-weight: 700; }
+.disclaimer p { margin: 8px 0 0; padding: 12px 14px; font-size: 14px; background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink); border-radius: 10px; }
+
+/* ───────── 단계 표시줄 (상단 고정) ───────── */
+.stepper-wrap { position: sticky; top: 0; z-index: 30; margin: 12px -20px 0; padding: 12px 20px 10px; background: var(--bg); box-shadow: 0 1px 0 var(--line), 0 6px 14px -10px rgba(20,40,32,.35); }
+.stepper { display: flex; list-style: none; margin: 0; padding: 0; }
+.stepper li { flex: 1 1 0; min-width: 0; position: relative; }
+.stepper li + li::before { content: ""; position: absolute; left: -50%; top: 17px; width: 100%; height: 3px; background: var(--line-strong); border-radius: 2px; }
+.stepper li.done + li::before { background: var(--accent); }
+.stepper button {
+  position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%;
+  min-height: 0; padding: 0 4px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; white-space: normal; text-align: center; border-radius: 8px;
+}
+.stepper button:hover:not(:disabled) { background: none; }
+.stepper button:hover:not(:disabled) .num { border-color: var(--accent); }
+.stepper button:disabled { opacity: 1; cursor: default; }
+.stepper .num { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 15px; background: var(--card); border: 2px solid var(--line-strong); color: var(--muted); transition: .15s; }
+.stepper li[aria-current="step"] .num, .stepper li.ready .num { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); }
+.stepper li.done .num { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-size: 0; }
+.stepper li.done .num::before { content: "✓"; font-size: 17px; }
+.stepper li.dirty .num { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); box-shadow: 0 0 0 5px var(--warn-bg); }
+.stepper .txt b { display: block; font-size: 14px; line-height: 1.3; }
+.stepper .st { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+.stepper li.done .st { color: var(--ok); font-weight: 700; }
+.stepper li.dirty .st { color: var(--warn-ink); font-weight: 700; }
+
+/* ───────── 카드·단계 ───────── */
+section.card { scroll-margin-top: 112px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 28px; margin: 22px 0; box-shadow: var(--shadow); }
+section.step.locked { opacity: .5; }
+.stepstat { font-size: 12.5px; font-weight: 700; margin-left: 10px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted); vertical-align: middle; background: var(--card); }
+.stepstat.done { color: var(--ok); border-color: var(--ok); }
+.stepstat.dirty { color: var(--warn-ink); border-color: var(--warn-line); background: var(--warn-bg); }
+.lead { margin: -4px 0 16px; color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 22px; }
+.applymsg { color: var(--muted); font-size: 14px; }
+.notice { background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink); border-radius: 10px; padding: 12px 16px; font-size: 14.5px; }
+
+/* ───────── 버튼 ───────── */
+button, .btn {
+  font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 0 18px;
+  border-radius: 9px; border: 1px solid var(--line-strong); background: var(--card); color: var(--ink); cursor: pointer;
+  font-weight: 700; font-size: 14.5px; white-space: nowrap; transition: background .15s, border-color .15s;
+}
+button:hover:not(:disabled), .btn:hover { background: var(--box); border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); min-height: 46px; padding: 0 26px; font-size: 16px; }
+button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+button.small, .btn.small { min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 7px; }
+button.link { border: 0; background: none; min-height: 0; padding: 4px 2px; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+button.link:hover:not(:disabled) { background: none; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line-strong); }
+.tools .lbl small { font-weight: 400; }
+.toolhint { flex-basis: 100%; margin: 4px 0 0; font-size: 13.5px; color: var(--muted); }
+.more-tools { margin-top: 16px; }
+.more-tools > summary span { font-weight: 400; color: var(--muted); }
+.more-tools .tools { margin-top: 10px; }
+.assume-detail { margin-top: 12px; }
+.tools .lbl { font-size: 13px; font-weight: 700; color: var(--muted); margin-right: 4px; }
+
+/* ───────── 입력 ───────── */
+.row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+label.f { display: flex; flex-direction: column; gap: 5px; font-size: 14px; font-weight: 700; color: var(--ink); min-width: 150px; flex: 1 1 150px; }
+input, select { font: inherit; }
+input[type=text], input[type=number], input[type=date], select {
+  min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--card);
+  color: var(--ink); width: 100%; font-size: 16px; font-weight: 400; font-variant-numeric: tabular-nums;
+}
+input[data-money] { text-align: right; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+input.assumed, select.assumed { background: var(--assumed); border-color: var(--warn-line); }
+.mini-table input, .mini-table select { min-height: 38px; padding: 5px 9px; font-size: 15px; }
+.hint { color: var(--muted); font-size: 13px; line-height: 1.55; }
+.fmtline { font-size: 13.5px; color: var(--accent); font-weight: 700; min-height: 1.5em; font-variant-numeric: tabular-nums; }
+.tag { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 5px; border: 1px solid var(--line-strong); white-space: nowrap; background: var(--card); }
+.tag.inc { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.tag.bs { color: var(--muted); }
+
+/* 파일 올리기 */
+.drop { position: relative; display: flex; align-items: center; gap: 18px; padding: 26px 24px; border: 2px dashed var(--line-strong); border-radius: 14px; background: var(--box); cursor: pointer; transition: .15s; }
+.drop:hover, .drop.over, .drop:focus-within { border-color: var(--accent); background: var(--accent-soft); }
+.drop svg { flex: none; color: var(--accent); }
+.drop b { display: block; font-size: 17px; line-height: 1.4; }
+.drop small { color: var(--muted); font-size: 14px; }
+.drop .licbtn { flex: none; margin-left: auto; position: relative; z-index: 1; }
+@media (max-width: 640px) { .drop .licbtn { margin-left: 0; } }
+.drop input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.startpick { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.startopt { display: flex; flex-direction: column; gap: 8px; }
+.startlbl { margin: 0; font-size: 14px; color: var(--muted); }
+.startlbl b { color: var(--ink); font-size: 15px; margin-right: 8px; }
+.startpick .drop { flex: 1; flex-direction: column; justify-content: center; text-align: center; gap: 10px; padding: 22px 16px; }
+.samplebox { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 8px; padding: 22px 16px; border: 2px solid var(--line-strong); border-radius: 14px; background: var(--card); }
+.samplebox b { font-size: 17px; line-height: 1.4; }
+.samplebox small { color: var(--muted); font-size: 14px; }
+.srcrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; }
+.srcrow .fileinfo { margin: 0; }
+.srcbadge { padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; border: 2px solid var(--ink); background: #ffd23f; color: #15151a; }
+.srcbadge.file { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+@media (max-width: 720px) { .startpick { grid-template-columns: 1fr; } }
+.fileinfo { margin: 14px 0 0; font-weight: 700; color: var(--muted); }
+.fileinfo.loaded { color: var(--ink); }
+.fileinfo.loaded::before { content: "✓"; display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 12px; vertical-align: 1px; }
+.fileinfo.bad { color: var(--err); }
+.fileinfo.bad::before { content: "!"; display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px; border-radius: 50%; border: 2px solid var(--err); font-size: 12px; vertical-align: 1px; }
+.import-detail { margin: 6px 0 0; font-size: 14px; }
+.import-detail summary { cursor: pointer; color: var(--muted); font-weight: 700; }
+.import-detail div { margin-top: 6px; padding: 10px 14px; background: var(--box); border-radius: 8px; color: var(--muted); line-height: 1.7; }
+
+/* 꼭 입력할 값 */
+.progress { display: flex; align-items: center; gap: 14px; margin: 4px 0 18px; }
+.bar { flex: 1; height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.bar > span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .25s; }
+.req-progress { font-weight: 800; font-size: 14.5px; white-space: nowrap; }
+.req-progress.pending { color: var(--err); }
+.req-progress.complete { color: var(--ok); }
+.reqbox { background: var(--box); border: 1px solid var(--box-line); border-radius: 14px; padding: 8px 20px 12px; margin: 0; }
+.reqbox.alldone { border-color: var(--ok); }
+.legendline { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+.rb { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 18px; height: 18px; padding: 0; margin-left: 2px; border: 1.5px solid; border-radius: 50%; font-style: normal; font-weight: 800; font-size: 11px; line-height: 1; vertical-align: middle; }
+.rb.todo { color: var(--err); border: 0; background: none; width: auto; height: auto; font-size: 20px; font-weight: 800; line-height: 1; transform: translateY(3px); }
+.rb.todo::before { content: "*"; }
+.rb.done { display: none; color: var(--accent-ink); background: var(--ok); border-color: var(--ok); }
+.rb.done::before { content: "✓"; }
+[data-req].ok .rb.todo { display: none; }
+[data-req].ok .rb.done { display: inline-flex; }
+.rb.legend { display: inline-flex !important; margin: 0 3px; }
+.grp { margin: 22px 0 8px; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.reqgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); column-gap: 20px; row-gap: 4px; }
+.reqgrid > .fld { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; min-width: 0; }
+@supports (grid-template-rows: subgrid) {
+  .reqgrid > .fld:not(.wide) { display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 5px; margin-bottom: 0; padding-bottom: 14px; }
+}
+.reqgrid > .fld.wide { grid-column: 1 / -1; }
+.fld.ok .fld-head label { color: var(--ok); }
+.fld-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 1.7em; }
+.fld-head label { font-weight: 800; font-size: 15px; }
+.fld-head .rb { margin-left: 0; }
+.fld-input { display: flex; align-items: center; gap: 8px; }
+.fld-input input { flex: 1 1 0; min-width: 0; }
+
+/* 기본값 영역 */
+.defbox { border: 1px solid var(--line); border-radius: 12px; padding: 4px 18px; margin: 4px 0; background: var(--card); }
+.defbox > summary { cursor: pointer; padding: 12px 0; font-weight: 800; }
+.defbox > summary span { color: var(--muted); font-weight: 400; }
+.defh { margin: 22px 0 8px; font-size: 15px; }
+.defbox .row { display: grid; grid-template-columns: repeat(auto-fill, minmax(235px, 1fr)); column-gap: 18px; row-gap: 4px; align-items: start; }
+.defbox .row > label.f { min-width: 0; flex: none; }
+@supports (grid-template-rows: subgrid) {
+  .defbox .row > label.f { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 4px; padding-bottom: 12px; }
+}
+details { margin: 10px 0; }
+summary { cursor: pointer; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+/* ───────── 표 ───────── */
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 14.5px; }
+th, td { padding: 9px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { background: var(--accent); color: var(--accent-ink); font-weight: 700; border-bottom: 0; }
+thead th:first-child { border-top-left-radius: 8px; }
+thead th:last-child { border-top-right-radius: 8px; }
+tbody tr:hover td { background: var(--accent-soft); }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.c { color: var(--muted); text-align: center; width: 52px; }
+tr.sum td { font-weight: 800; border-top: 1px solid var(--line-strong); }
+tr.sub td:first-child { padding-left: 26px; }
+.mini-table tbody tr:hover td { background: transparent; }
+.mini-table td { vertical-align: middle; }
+.mini-table td:last-child { width: 72px; text-align: center; }
+
+/* ───────── 결과 ───────── */
+.result-meta { margin: -6px 0 16px; color: var(--muted); font-size: 14.5px; }
+.tabs { display: flex; gap: 0; overflow-x: auto; margin: 0 0 20px; border-bottom: 2px solid var(--line); scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: none; background: none; border: 0; border-bottom: 3px solid transparent; border-radius: 0; margin-bottom: -2px; min-height: 46px; padding: 0 13px; color: var(--muted); font-weight: 700; font-size: 14.5px; }
+.tabs button:hover { color: var(--ink); background: var(--box); border-color: transparent; border-bottom-color: var(--line-strong); }
+.tabs button[aria-selected=true] { color: var(--ink); font-weight: 800; border-bottom-color: var(--accent); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat { background: var(--box); border: 1px solid var(--box-line); border-radius: 12px; padding: 14px 16px; }
+.stat .k { font-size: 13px; color: var(--muted); font-weight: 700; }
+.stat .v { font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.stat.empty .v { font-size: 15px; color: var(--muted); font-weight: 700; }
+.next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 12px; margin: 0 0 18px; }
+.next b { display: block; }
+.next span { color: var(--muted); font-size: 14.5px; }
+.sechead { margin: 26px 0 8px; font-size: 17px; }
+.msg { display: flex; gap: 10px; align-items: flex-start; padding: 11px 14px; border-radius: 10px; margin: 8px 0; border: 1px solid var(--line); background: var(--box); line-height: 1.6; }
+.msg .lv { flex: none; font-weight: 800; font-size: 12.5px; padding: 1px 10px; border-radius: 999px; background: var(--card); border: 1px solid currentColor; margin-top: 2px; white-space: nowrap; }
+.msg .code { color: var(--muted); font-size: 12px; margin-left: 8px; white-space: nowrap; }
+.msg.error { border-color: var(--err); background: var(--err-soft); color: var(--err); }
+.msg.error .code { color: inherit; opacity: .75; }
+.msg.warn { border-color: var(--warn-line); background: var(--warn-bg); color: var(--warn-ink); }
+.msg.warn .code { color: inherit; opacity: .7; }
+.msg.info .lv { color: var(--muted); }
+.valbtn { border: none; background: none; padding: 0; min-height: 0; font: inherit; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; color: var(--accent); text-decoration: underline dotted; text-underline-offset: 4px; }
+.valbtn:hover:not(:disabled) { background: none; border: 0; text-decoration: underline; }
+/* 글자 크기인 복사 버튼도 손가락으로 누르기 쉽게: 보이는 크기는 그대로, 눌리는 범위만 넓힌다 */
+.valbtn { padding: 8px 4px; margin: -8px -4px; }
+@media (pointer: coarse) { .valbtn { padding: 12px 8px; margin: -12px -8px; } }
+.valbtn.copied { color: var(--ok); text-decoration: none; }
+.hx h3 { font-size: 17px; margin: 26px 0 2px; }
+.hx .menu { color: var(--muted); font-size: 13.5px; margin-bottom: 8px; }
+.hx ul { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+.printhead, .printonly { display: none; }
+
+/* ───────── 토스트·꼬리말 ───────── */
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 16px); background: #26302c; color: #fff; padding: 12px 20px; border-radius: 999px; font-weight: 700; font-size: 14.5px; opacity: 0; pointer-events: none; transition: .2s; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,.28); max-width: calc(100vw - 32px); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.foot { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13.5px; line-height: 1.8; }
+
+/* ───────── 모바일 ───────── */
+@media (max-width: 760px) {
+  .grid2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  main { padding: 0 14px 40px; }
+  .hero { padding-top: 24px; }
+  h1 { font-size: 23px; }
+  .logo { width: 40px; height: 40px; }
+  .stepper-wrap { margin: 8px -14px 0; padding: 10px 14px 8px; }
+  .stepper .st { display: none; }
+  .stepper .txt b { font-size: 12.5px; }
+  .stepper li + li::before { top: 17px; }
+  section.card { padding: 20px 16px; margin: 16px 0; }
+  .drop { flex-direction: column; text-align: center; padding: 22px 16px; }
+  .actions button.primary { width: 100%; }
+  .reqbox { padding: 4px 14px 10px; }
+  .tabs button { padding: 0 13px; }
+  .next button { width: 100%; }
+  .progress { flex-direction: column-reverse; align-items: stretch; gap: 6px; }
+  .progress .bar { flex: none; width: 100%; }
+  .req-progress { white-space: normal; }
+}
+
+/* ───────── 인쇄 ───────── */
+@media print {
+  body { background: #fff; color: #000; font-size: 12px; }
+  main { max-width: none; padding: 0; }
+  .noprint, .tabs, .stepper-wrap, .toast, .foot, .hero { display: none !important; }
+  section.card { border: none; padding: 0; margin: 0; box-shadow: none; }
+  .panel { display: block !important; page-break-inside: avoid; margin-bottom: 18px; }
+  .printhead { display: block; margin-bottom: 8px; }
+  .printonly { display: block; }
+}
+
+/* ── 체험 버전·이용권 잠금 ── */
+.edition-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 0 0 20px; padding: 14px 18px; border: 2.5px solid #15151a; border-radius: 16px; background: #fff3c4; color: #26302c; box-shadow: 5px 5px 0 #15151a; font-size: 15px; }
+.edition-banner b { font-weight: 800; }
+.drop .licbtn, .edition-banner button { min-height: 36px; padding: 0 16px; border: 2.5px solid #15151a; border-radius: 10px; background: #ffd23f; color: #15151a; font-weight: 800; cursor: pointer; }
+.tabs button.locked::before { content: "\1F512 "; font-size: 12px; }
+.lockpanel { border: 2px dashed var(--line-strong); border-radius: 16px; padding: 32px 20px; text-align: center; background: var(--box); }
+.lockpanel h3 { font-size: 19px; margin: 0 0 6px; }
+.lockpanel p { margin: 0 0 14px; color: var(--muted); }
+dialog#licDlg { border: 3px solid #15151a; border-radius: 20px; padding: 24px; max-width: 440px; width: 92vw; box-shadow: 7px 7px 0 #15151a; background: var(--card); color: var(--ink); }
+dialog#licDlg::backdrop { background: rgba(0, 0, 0, .45); }
+dialog#licDlg .f { display: block; margin: 0 0 12px; font-weight: 700; font-size: 14px; }
+dialog#licDlg .agree { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0 8px; font-size: 13px; line-height: 1.6; color: var(--muted); }
+dialog#licDlg .agree input { margin-top: 4px; flex: none; }
+dialog#licDlg .agree a { color: inherit; text-decoration: underline; }
+.foot .legal { margin: 10px 0 0; }
+.foot .legal a { color: inherit; text-decoration: underline; margin-right: 14px; }
+dialog#licDlg .f input { display: block; width: 100%; margin-top: 6px; }
+/* ── 환급 점검 마법사 ── */
+body.rc-mode main > :not(.hero):not(#rcWizard):not(.foot) { display: none !important; }
+body.rc-mode .hero .chips, body.rc-mode .hero .rc-entry, body.rc-mode .hero .disclaimer, body.rc-mode .hero .tagline { display: none; }
+.rc-entry { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 12px 0 0; }
+.rc-entry button { min-height: 44px; padding: 0 18px; border: 2.5px solid #15151a; border-radius: 12px; background: #ffd23f; color: #15151a; font-weight: 800; cursor: pointer; }
+.rc-entry span { color: var(--muted); font-size: 14px; }
+.rc-wizard { padding: 22px 24px; }
+.rc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+.rc-mode { font-size: 13px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.rc-prog { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.rc-prog span { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+.rc-stepno { margin: 6px 0 14px; color: var(--muted); font-size: 14px; font-weight: 700; }
+.rc-body h2 { margin: 0 0 12px; font-size: 22px; line-height: 1.4; outline: none; }
+.rc-body h3 { font-size: 16px; margin: 18px 0 6px; }
+.rc-count { color: var(--muted); font-size: 15px; font-weight: 400; }
+.rc-body p, .rc-body li { line-height: 1.75; }
+.rc-diagram { width: 100%; max-width: 560px; height: auto; margin: 6px 0 12px; color: var(--accent); }
+.rc-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
+.rc-two > div { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--box); }
+.rc-two ul { margin: 6px 0 0; padding-left: 18px; }
+.rc-list { padding-left: 20px; }
+.rc-choose { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 6px; }
+.rc-choose button { min-height: 46px; padding: 0 22px; }
+.rc-row { display: flex; flex-wrap: wrap; gap: 14px; }
+.rc-row label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+.rc-row select, .rc-field input[type=text] { min-height: 44px; padding: 0 12px; font-size: 16px; }
+.rc-field { margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--box); }
+.rc-field > label:first-child { display: block; margin-bottom: 6px; }
+.rc-field input[type=text] { width: 100%; max-width: 360px; text-align: right; }
+.rc-check { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-weight: 700; }
+.rc-small { color: var(--muted); font-size: 13.5px; }
+.rc-small.bad, .rc-body .bad { color: var(--err, #b3261e); }
+.rc-help { margin: 8px 0 0; }
+.rc-help summary { cursor: pointer; font-weight: 700; color: var(--accent); }
+.rc-help > div { padding: 8px 0 0; font-size: 14.5px; }
+.rc-fig, .rc-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.rc-fig th, .rc-fig td, .rc-table th, .rc-table td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+.rc-fig th, .rc-table th { background: var(--accent-soft); }
+.rc-fig td.n, .rc-table td.n { text-align: right; }
+.rc-fig .hl td { background: #fff3c4; color: #15151a; font-weight: 800; }
+.rc-arrow { color: #b3261e; font-size: 13px; margin-left: 6px; }
+.rc-steps { padding-left: 22px; }
+.rc-badge { display: inline-block; margin: 6px 0; padding: 4px 12px; border-radius: 10px; background: #fff3c4; color: #5a3b10; font-size: 13.5px; }
+.rc-chip { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 800; border: 1.5px solid var(--line-strong); }
+.rc-chip.ok { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.rc-chip.warn { background: #ffd23f; color: #15151a; border-color: #15151a; }
+.rc-warnrow td { background: rgba(255, 210, 63, .18); }
+.rc-warns { padding-left: 18px; }
+.rc-warns li { margin: 8px 0; }
+.rc-root { padding: 10px 14px; border-left: 5px solid #ffd23f; background: var(--box); }
+.rc-ok { color: var(--accent); font-weight: 700; }
+.rc-unk { color: var(--muted); font-style: italic; }
+.rc-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 22px; }
+.rc-nav .primary { margin-left: auto; }
+.rc-saverow { margin-top: 14px; }
+.rc-saverow label.link { cursor: pointer; text-decoration: underline; }
+@media (max-width: 640px) { .rc-wizard { padding: 18px 14px; } .rc-two { grid-template-columns: 1fr; } .rc-nav { flex-direction: column-reverse; } .rc-nav button { width: 100%; } .rc-choose button { width: 100%; } }
+@media print { body.rc-mode .rc-wizard { border: 0; box-shadow: none; padding: 0; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><!--__LOGO__--></span>
+      <h1>장부선생</h1>
+    </div>
+    <p class="tagline">간편장부 → 복식부기 변환. 간편장부를 올리면 복식부기 재무제표와 홈택스 입력값으로 계산해 보여 드립니다.</p>
+    <div class="chips noprint">
+      <span class="chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>파일은 이 브라우저 안에서만 처리됩니다</span>
+      <span class="chip warn">참고용 계산 도구 · 세무 상담·신고 대행이 아닙니다</span>
+      <span class="chip hidden" id="licChip"></span>
+    </div>
+    <div class="rc-entry noprint"><button type="button" id="btnRefund">환급 점검 · 이월결손금 놓친 게 없는지 확인</button><span>단계별로 따라 하면 신고서 값과 비교해 어긋난 해를 찾아 줍니다.</span></div>
+    <details class="disclaimer noprint"><summary>이용 전에 확인하세요</summary>
+      <p>계산 결과는 입력하신 값과 임시값에 따라 달라지는 <b>참고 자료</b>입니다. 신고용으로 쓰기 전에 세무사 검수를 받으세요. 신고 책임은 신고인에게 있습니다.</p>
+    </details>
+  </header>
+
+  <section id="rcWizard" class="card rc-wizard hidden" aria-live="polite" aria-label="환급 점검"></section>
+
+  <div id="editionBanner" class="edition-banner noprint hidden" role="note">
+    <span><b>체험 버전</b> — 가상 샘플의 결과를 모든 탭(홈택스 입력값, 조정계산서 포함)에서 미리 볼 수 있습니다. <b>내 파일 업로드, 입력값을 바꾼 계산, 저장·인쇄</b>는 이용권이 필요합니다.</span>
+  </div>
+
+  <div class="stepper-wrap noprint">
+    <ol class="stepper" id="stepper" aria-label="진행 단계">
+      <li data-step="1"><button type="button"><span class="num">1</span><span class="txt"><b>불러오기</b><span class="st"></span></span></button></li>
+      <li data-step="2"><button type="button"><span class="num">2</span><span class="txt"><b>꼭 입력할 값</b><span class="st"></span></span></button></li>
+      <li data-step="3"><button type="button"><span class="num">3</span><span class="txt"><b>기본값(선택)</b><span class="st"></span></span></button></li>
+      <li data-step="4"><button type="button"><span class="num">4</span><span class="txt"><b>결과</b><span class="st"></span></span></button></li>
+    </ol>
+  </div>
+
+  <section class="card noprint step" id="s1">
+    <h2>1. 간편장부 불러오기</h2>
+    <div class="startpick" id="startPick">
+      <div class="startopt">
+        <p class="startlbl"><b>먼저 둘러보기</b><span>처음이라면 여기서</span></p>
+        <div class="samplebox">
+          <b>가상 샘플로 체험해 보기</b>
+          <small>예시 거래(상가A·상가B)로 결과 화면을 미리 봅니다. 실제 데이터가 아닙니다.</small>
+          <button type="button" class="primary" id="btnSample">가상 샘플 불러오기</button>
+        </div>
+      </div>
+      <div class="startopt">
+        <p class="startlbl"><b>내 장부로 시작</b><span>실제 신고 값을 계산할 때</span></p>
+      <label class="drop" id="drop" for="file">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L8 8m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        <span><b>간편장부 파일을 끌어다 놓거나 눌러서 고르세요</b><small>엑셀(.xlsx) 또는 CSV · 거래 시트만 읽고 거래처 이름은 가져오지 않습니다</small></span>
+        <button type="button" id="btnLicOpen" class="licbtn">이용권 입력</button>
+        <input type="file" id="file" accept=".xlsx,.xls,.csv">
+      </label>
+
+      </div>
+    </div>
+    <div class="srcrow">
+      <span class="srcbadge hidden" id="srcBadge"></span>
+      <p class="fileinfo" id="fileInfo">아직 고른 파일이 없습니다. 위에서 한 가지를 선택하세요.</p>
+      <button class="link hidden" id="btnChangeSrc" type="button">다른 장부 선택</button>
+    </div>
+    <details class="import-detail hidden" id="importDetail"><summary>무엇을 읽었나요?</summary><div id="importDetailBody"></div></details>
+    <div class="row" style="margin-top:14px">
+      <div class="f hidden" id="siteWrap" role="group" aria-labelledby="siteLbl">
+        <span id="siteLbl" class="sitelbl">사업장(시트) 선택</span>
+        <div class="sitebtns" id="siteBtns"></div>
+        <input type="hidden" id="siteSel" value="0">
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="btnApply1" type="button" disabled>1단계 반영</button>
+      <span class="applymsg" id="msg1"></span>
+    </div>
+  </section>
+
+  <section class="card noprint step" id="s2">
+    <div class="stepnav"><button type="button" class="link" data-goto-step="s1">← 1단계로 돌아가기</button></div>
+    <h2>2. 꼭 입력할 값</h2>
+    <p class="lead">간편장부에 없는 값 7개입니다. 아는 값을 넣고 <b>[2단계 반영]</b>을 누르면 다음 화면(3단계)으로 넘어갑니다. 나머지는 기본값이 들어 있어 그대로 두어도 됩니다.</p>
+    <div class="progress"><div class="bar" aria-hidden="true"><span id="reqBar"></span></div><div id="reqProgress" class="req-progress" role="status"></div></div>
+
+    <div id="reqBox" class="reqbox">
+      <p class="legendline"><span class="rb todo legend" aria-hidden="true"></span> 입력 필요 · <span class="rb done legend" aria-hidden="true"></span> 입력함 — 지금 들어 있는 값은 임시 추정입니다. 맞는 값이면 칸을 눌렀다 나오기만 해도 입력함이 됩니다. 입력한 금액은 칸 아래에 읽기 쉽게 풀어 보여 줍니다.</p>
+
+      <h4 class="grp"><span class="tag inc">소득금액에 영향</span> 신고 소득이 달라지는 값 <span class="muted">(3개)</span></h4>
+      <div class="reqgrid">
+        <div class="fld" data-req>
+          <div class="fld-head"><label for="in-b-cost">건물분 취득가액(원)</label><em class="rb todo" role="img" aria-label="입력 필요" title="입력 필요"></em><em class="rb done" role="img" aria-label="입력함" title="입력함"></em></div>
+          <div class="fld-input"><input id="in-b-cost" type="number" inputmode="numeric" class="in" data-k="b.cost"></div>
+          <small class="hint">토지를 뺀 건물 취득가. 감가상각비와 간주임대료(건설비 상당액)에 쓰입니다. 매매계약서·등기 확인.</small>
+        </div>
+        <div class="fld" data-req>
+          <div class="fld-head"><label for="in-b-acq">취득일</label><em class="rb todo" role="img" aria-label="입력 필요" title="입력 필요"></em><em class="rb done" role="img" aria-label="입력함" title="입력함"></em></div>
+          <div class="fld-input"><input id="in-b-acq" type="date" class="in" data-k="b.acquiredOn"></div>
+          <div class="fmtline" aria-hidden="true"></div>
+          <small class="hint">올해 이전에 취득했으면 12개월 상각, 올해 취득이면 취득한 달부터 월할입니다.</small>
+        </div>
+        <div class="fld" data-req>
+          <div class="fld-head"><label for="in-o-dep">기초 임대보증금(원)</label><em class="rb todo" role="img" aria-label="입력 필요" title="입력 필요"></em><em class="rb done" role="img" aria-label="입력함" title="입력함"></em></div>
+          <div class="fld-input"><input id="in-o-dep" type="number" inputmode="numeric" class="in" data-k="o.deposit"></div>
+          <small class="hint">연초 보증금 잔액. 간주임대료 계산과 부채에 쓰입니다. 임대차계약서 확인.</small>
+        </div>
+      </div>
+
+      <h4 class="grp"><span class="tag bs">재무상태표만</span> 재무제표 숫자만 달라지는 값 <span class="muted">(4개)</span></h4>
+      <div class="reqgrid">
+        <div class="fld" data-req>
+          <div class="fld-head"><label for="in-b-acc">기초 감가상각누계액(원)</label><em class="rb todo" role="img" aria-label="입력 필요" title="입력 필요"></em><em class="rb done" role="img" aria-label="입력함" title="입력함"></em></div>
+          <div class="fld-input"><input id="in-b-acc" type="number" inputmode="numeric" class="in" data-k="b.accumDepOpening"></div>
+          <small class="hint">취득일부터 작년 말까지 상각한 누계. 건물 장부가액이 됩니다. 이전 장부나 세무사 확인.</small>
+        </div>
+        <div class="fld" data-req>
+          <div class="fld-head"><label for="in-b-land">토지분 취득가액(원)</label><em class="rb todo" role="img" aria-label="입력 필요" title="입력 필요"></em><em class="rb done" role="img" aria-label="입력함" title="입력함"></em></div>
+          <div class="fld-input"><input id="in-b-land" type="number" inputmode="numeric" class="in" data-k="b.landCost"></div>
+          <small class="hint">감가상각하지 않는 토지 취득가. 없으면 0.</small>
+        </div>
+        <div class="fld" data-req>
+          <div class="fld-head"><label for="in-o-cash">기초 현금·예금(원)</label><em class="rb todo" role="img" aria-label="입력 필요" title="입력 필요"></em><em class="rb done" role="img" aria-label="입력함" title="입력함"></em></div>
+          <div class="fld-input"><input id="in-o-cash" type="number" inputmode="numeric" class="in" data-k="o.cash"></div>
+          <small class="hint">작년 12월 31일 통장 잔액 합계.</small>
+        </div>
+        <div class="fld wide" data-req>
+          <div class="fld-head"><label>대출 기초 잔액</label><em class="rb todo" role="img" aria-label="입력 필요" title="입력 필요"></em><em class="rb done" role="img" aria-label="입력함" title="입력함"></em><button class="small" type="button" data-add="loans">+ 추가</button></div>
+          <table class="mini-table" id="tLoans"><thead><tr><th>대출/은행</th><th class="n">원금</th><th></th></tr></thead><tbody></tbody></table>
+          <small class="hint">은행별 대출잔액증명서. 없으면 줄을 지우세요.</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="btnApply2" type="button">2단계 반영 · 결과 보기</button>
+      <span class="applymsg" id="msg2"></span>
+    </div>
+  </section>
+
+  <section class="card noprint step" id="s2b">
+    <div class="stepnav"><button type="button" class="link" data-goto-step="s2">← 2단계로 돌아가기</button></div>
+    <h2>3. 기본값 · 추가 입력 <span class="muted" style="font-weight:400;font-size:15px">(선택)</span></h2>
+    <p class="lead">바꿀 값이 없으면 그대로 <b>[3단계 반영]</b>만 누르면 결과 화면으로 넘어갑니다. 바꾸려면 아래를 펼쳐 고친 뒤 반영합니다. 반영하기 전에는 결과에 적용되지 않습니다.</p>
+    <details class="defbox">
+      <summary>기본값 보기 · 고치기 <span>— 바꾸지 않아도 됩니다</span></summary>
+      <div class="row" style="margin-top:10px">
+        <label class="f">과세연도<input type="number" class="in" data-k="year"></label>
+        <label class="f">부가세 처리
+          <select class="in" data-k="vatMode"><option value="exclude">제외(공급가액 기준)</option><option value="track">부가세예수금/대급금으로 추적(납부 내역 입력)</option></select>
+        </label>
+        <label class="f">간주임대료 처리
+          <select class="in" data-k="deemedRentMode"><option value="recompute">보증금·건설비로 재계산</option><option value="asEntered">원본에 입력된 값 사용</option></select>
+        </label>
+        <label class="f">업종코드 (엑셀에서 읽으면 자동)<input type="text" class="in" data-k="industryCode" placeholder="701201"></label>
+        <label class="f">신고유형
+          <select class="in" data-k="filingType"><option value="11">11 복식부기-자기조정</option><option value="12">12 복식부기-외부조정</option></select>
+        </label>
+        <label class="f">소득구분
+          <select class="in" data-k="incomeType">
+            <option value="30">30 부동산임대업(주택 제외)</option>
+            <option value="32">32 주택임대업</option>
+            <option value="40">40 부동산임대업 외 사업소득</option>
+          </select>
+        </label>
+      </div>
+
+      <h4 class="defh">건물 상세</h4>
+      <div class="row">
+        <label class="f">내용연수(년)<input type="number" class="in" data-k="b.usefulLifeYears"></label>
+        <label class="f">잔존가액 비율(%)<input type="number" step="any" class="in" data-k="b.residualPct"></label>
+        <label class="f">임대용 건축물 연면적(㎡)<input type="number" step="any" class="in" data-k="b.totalArea"></label>
+        <label class="f">보증금 받고 임대한 면적(㎡)<input type="number" step="any" class="in" data-k="b.depositArea"></label>
+      </div>
+      <p class="muted" style="margin:4px 0 0">내용연수 40년·잔존가액 10%는 엑셀의 감가상각비와 맞춘 값입니다. 면적은 모르면 둘 다 1(건물 전체를 임대)로 둡니다.</p>
+
+      <h4 class="defh">연중 변동 (있을 때만)</h4>
+      <div class="grid2">
+        <div>
+          <strong>보증금 변동</strong> <button class="small" type="button" data-add="deps">+ 추가</button>
+          <table class="mini-table" id="tDeps"><thead><tr><th>적용일</th><th class="n">변경 후 잔액</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+        <div>
+          <strong>사업주 투입(+)·인출(−)</strong> <button class="small" type="button" data-add="owner">+ 추가</button>
+          <table class="mini-table" id="tOwner"><thead><tr><th>일자</th><th class="n">금액</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <strong>대출 원금 상환(+)·추가 차입(−)</strong> <button class="small" type="button" data-add="loanpay">+ 추가</button>
+          <table class="mini-table" id="tLoanPay"><thead><tr><th>일자</th><th class="n">원금</th><th></th></tr></thead><tbody></tbody></table>
+          <small class="hint">연중에 갚은 대출 원금입니다. 이자는 간편장부의 지급이자에 이미 들어 있으므로 넣지 않습니다. 넣으면 연말 대출 잔액과 현금이 줄어듭니다.</small>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="f">보증금 이자수익(예금이자 등, 연간 합계)<input type="number" class="in" data-k="depositInterestIncome" title="장부에 영업외수익(이자수익)으로 넣고, 조정계산서 12번에서 총수입금액불산입으로 뺍니다. 간주임대료 계산에서는 보증금 운용수입으로 차감합니다."></label>
+      </div>
+
+      <h4 class="defh">부가세 추적을 쓸 때만</h4>
+      <div class="row">
+        <label class="f">기초 미납 부가세예수금<input type="number" class="in" data-k="o.vatOut" placeholder="추적 모드에서만"></label>
+        <label class="f">기초 부가세대급금(미환급)<input type="number" class="in" data-k="o.vatIn" placeholder="추적 모드에서만"></label>
+      </div>
+      <div style="margin-top:8px">
+        <strong>부가세 납부(+)·환급(−) 내역</strong> <button class="small" type="button" data-add="vat">+ 추가</button>
+        <span class="muted">부가세 처리를 "추적"으로 둘 때만 사용합니다. 확정신고 납부액을 날짜별로 적으면 예수금과 대급금을 상계하고, 남는 예수금을 미납 부가세(유동부채)로 둡니다.</span>
+        <table class="mini-table" id="tVat"><thead><tr><th>납부일</th><th class="n">납부(+)·환급(−) 금액</th><th></th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <h4 class="defh">세무조정 (조정계산서)</h4>
+      <p class="muted" style="margin:0 0 8px">간주임대료와 보증금 이자수익은 자동으로 들어갑니다. 그 밖에 필요경비에서 뺄 비용(사적 대출 이자 등)이 있을 때만 적으세요. 도구는 인정 여부를 판단하지 않습니다.</p>
+      <div class="row">
+        <label class="f">기부금 한도초과액(⑭)<input type="number" class="in" data-k="donationExcess"></label>
+        <label class="f">기부금이월액 중 필요경비 산입액(⑮)<input type="number" class="in" data-k="donationCarryover"></label>
+      </div>
+      <div style="margin-top:8px">
+        <strong>조정 항목</strong> <button class="small" type="button" data-add="adj">+ 추가</button>
+        <table class="mini-table" id="tAdj"><thead><tr><th>종류</th><th class="n">금액</th><th>사유(과목)</th><th>과목코드</th><th></th></tr></thead><tbody></tbody></table>
+      </div>
+      <details><summary>부가가치세 신고서 값 (조정후 총수입금액명세서용, 선택)</summary>
+        <p class="muted" style="margin:6px 0">부가세 1기·2기 신고서의 값을 합산해 넣으면 "조정후 총수입금액명세서"의 8~16번이 채워지고, 4번 총수입금액과 맞는지 확인합니다. 부가세 처리를 "추적"으로 두면 부가세법상 간주임대료의 부가세(공급가액의 10%)도 임대인 부담 세금과공과로 장부에 들어갑니다.</p>
+        <div class="row">
+          <label class="f">과세표준 일반(8번)<input type="number" class="in" data-k="vatTaxBase"></label>
+          <label class="f">영세율(9번)<input type="number" class="in" data-k="vatZeroRate"></label>
+          <label class="f">면세사업 수입금액(11번)<input type="number" class="in" data-k="vatExempt"></label>
+          <label class="f">부가세법상 간주임대료(공급가액)<input type="number" class="in" data-k="vatDeemedRent" title="부가세 신고서의 간주임대료 값. 부가세 처리를 추적으로 두면 그 10%를 세금과공과 / 부가세예수금으로 장부에 넣습니다."></label>
+        </div>
+      </details>
+      <details><summary>세무대리인 (선택, 조정계산서에 표시)</summary>
+        <div class="row">
+          <label class="f">성명<input type="text" class="in" data-k="agent.name"></label>
+          <label class="f">전화번호<input type="text" class="in" data-k="agent.phone"></label>
+          <label class="f">대리구분
+            <select class="in" data-k="agent.kind"><option value="">선택 안 함</option><option value="1">1. 기장</option><option value="2">2. 신고</option></select>
+          </label>
+          <label class="f">관리번호<input type="text" class="in" data-k="agent.mgmtNo"></label>
+          <label class="f">조정반번호<input type="text" class="in" data-k="agent.teamNo"></label>
+        </div>
+      </details>
+
+      <h4 class="defh">기장세액공제 (공제액을 미리 계산해 보고 싶을 때)</h4>
+      <p class="muted" style="margin:0 0 8px">홈택스가 03~05 화면까지 입력한 뒤 보여 주는 값을 넣으면 공제액이 계산됩니다. 비워 두면 "입력 필요"로 표시될 뿐 다른 결과에는 영향이 없습니다.</p>
+      <div class="row">
+        <label class="f">종합소득 산출세액<input type="number" class="in" data-k="c.computedTax" placeholder="신고서 값"></label>
+        <label class="f">종합소득금액<input type="number" class="in" data-k="c.totalIncome" placeholder="신고서 값"></label>
+        <label class="f">기장소득금액(비우면 이 사업장 소득)<input type="number" class="in" data-k="c.bookIncome"></label>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button class="primary" id="btnApply3" type="button">3단계 반영 · 결과 보기</button>
+      <button class="link" type="button" data-goto-step="s3">건너뛰고 결과 보기</button>
+      <span class="applymsg" id="msg3"></span>
+    </div>
+    <details class="more-tools noprint"><summary>입력값 저장 · 불러오기, 임시값 목록 <span>— 필요할 때만 펼치세요</span></summary>
+    <div class="tools">
+      <span class="lbl">입력값 보관 <small>(선택)</small></span>
+      <button id="btnSave" class="small" type="button">입력값 파일로 저장</button>
+      <label class="btn small" for="loadJson">저장한 입력값 불러오기<input type="file" id="loadJson" accept=".json" class="sr-only"></label>
+      <button id="btnReset" class="small" type="button">처음 값으로 되돌리기</button>
+      <p class="toolhint">지금 입력한 값을 파일로 저장해 두었다가 다음에 다시 불러올 수 있습니다. 파일은 내 컴퓨터에만 저장되고 어디에도 전송되지 않습니다. 처음 값으로 되돌리면 입력한 값이 모두 기본 임시값으로 돌아갑니다.</p>
+    </div>
+    <details class="assume-detail"><summary>임시로 넣어 둔 값이 무엇인가요? <span class="muted">(<span id="assumeCount"></span>)</span></summary><p class="toolhint">실제 자료가 없어 우리가 가정해서 넣은 값입니다. 신고 전에 실제 값으로 바꾸세요.</p><ul id="assumeList" class="muted"></ul></details>
+    </details>
+  </section>
+
+  <section class="card" id="s3">
+    <div class="stepnav noprint"><button type="button" class="link" data-goto-step="s2">← 입력값 고치러 2단계로</button><button type="button" class="link" data-goto-step="s2b">← 3단계(기본값)로</button></div>
+    <h2 class="noprint">4. 결과 <span class="stepstat" id="stat4"></span></h2>
+    <p class="result-meta noprint" id="resultMeta"></p>
+    <div id="staleBanner" class="notice noprint hidden" style="margin-bottom:14px"></div>
+    <div class="printhead"><h1>표준재무제표 (복식부기 변환)</h1><div id="printMeta" class="muted"></div></div>
+    <div id="resultEmpty" class="lead noprint">1~2단계를 반영하면 결과가 여기에 표시됩니다.</div>
+    <div id="result" class="hidden">
+      <div class="tabs noprint" role="tablist" id="tabs"></div>
+      <div id="panels"></div>
+      <div class="actions noprint">
+        <button id="btnPrint" type="button">인쇄 / PDF 저장</button>
+        <button id="btnJournalCsv" type="button">분개장 CSV 내보내기</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot noprint">
+    <p style="margin:0">이 도구는 입력하신 값으로 계산한 <b>참고 자료</b>를 만들어 줍니다. 세법 조문은 직접 확인하지 못했고, 국세청 작성사례·신고서 양식·전문가 블로그 자료를 바탕으로 만들었습니다. 신고 전에 세무사 확인을 받으세요. 신고 책임은 신고인에게 있습니다. 2025년 귀속 기준이며, 근거 자료의 출처는 프로젝트의 <code>docs/sources.md</code>에 정리되어 있습니다.</p>
+    <p style="margin:10px 0 0">장부선생 <span id="verTag"></span> · 참고용 계산 도구이며 세무 상담·신고 대행이 아닙니다. 신고 책임은 신고인에게 있습니다.</p>
+    <p class="legal"><a href="legal/terms-of-service.html" target="_blank" rel="noopener">이용약관</a><a href="legal/privacy-policy.html" target="_blank" rel="noopener">개인정보 처리방침</a><a href="legal/refund-policy.html" target="_blank" rel="noopener">환불·청약철회 안내</a></p>
+    <p style="margin:10px 0 0">Copyright © madoo. All rights reserved.</p>
+  </footer>
+</main>
+<dialog id="licDlg" aria-labelledby="licTitle">
+  <form method="dialog" id="licForm" onsubmit="return false">
+    <h2 id="licTitle" style="margin:0 0 6px;font-size:19px">이용권 입력</h2>
+    <p class="muted" id="licWhy" style="margin:0 0 14px;font-size:14.5px">구매 후 이메일로 받은 6자리 코드를 입력하세요.</p>
+    <label class="f">이메일<input type="email" id="licEmail" autocomplete="email" placeholder="구매 때 쓴 이메일"></label>
+    <label class="f">6자리 코드<input type="text" id="licCode" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" placeholder="000000"></label>
+    <label class="agree"><input type="checkbox" id="licAgree"> <span><a href="legal/terms-of-service.html" target="_blank" rel="noopener">이용약관</a>, <a href="legal/privacy-policy.html" target="_blank" rel="noopener">개인정보 처리방침</a>, <a href="legal/refund-policy.html" target="_blank" rel="noopener">환불 안내</a>를 읽었고 동의합니다. 코드를 입력해 이용을 시작하면 청약철회가 제한될 수 있습니다.</span></label>
+    <p id="licMsg" class="applymsg" role="status" style="min-height:1.4em"></p>
+    <div class="actions"><button type="button" class="primary" id="licOk">확인</button><button type="button" id="licCancel">닫기</button><a class="link" id="licBuy" href="#" target="_blank" rel="noopener">이용권 구매 안내</a></div>
+  </form>
+</dialog>
+<div id="toast" class="toast noprint" role="status" aria-live="polite"></div>
+
+<script>
+// 스크립트 오류를 모아 두었다가 엔진이 없을 때 화면에 보여 준다
+window.__loadErrors = [];
+window.addEventListener('error', function (e) { window.__loadErrors.push((e && e.message) || '알 수 없는 오류'); });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// 페이지에 module/exports가 정의된 환경에서는 SheetJS가 전역 XLSX 대신 exports에 붙는다. 그 경우에도 찾는다.
+(function () {
+  if (typeof XLSX !== 'undefined' && XLSX && XLSX.read) return; // 전역 XLSX가 빈 객체뿐인 경우도 걸러낸다
+  var m = (typeof module !== 'undefined' && module && module.exports && module.exports.read) ? module.exports
+    : ((typeof exports !== 'undefined' && exports && exports.read) ? exports : null);
+  if (m) window.XLSX = m;
+})();
+</script>
+<script>
+/*__ENGINE__*/
+</script>
+<script>
+(function () {
+'use strict';
+var E = window.RentalLedger;
+if (E && window.RentalLedgerPaidFactory) E.setPaid(window.RentalLedgerPaidFactory); // 개인 빌드: 유료 모듈이 같이 들어 있다
+if (!E) {
+  var errBox = document.createElement('div');
+  errBox.className = 'notice';
+  errBox.style.cssText = 'margin:12px 0;border-color:#b3261e';
+  errBox.textContent = '계산 엔진을 불러오지 못했습니다. 원본 템플릿(src/template.html)을 열고 계신 것은 아닌가요? ' +
+    '빌드된 dist/index.html 파일을 열어야 합니다. 그래도 같으면 이 화면 캡처와 아래 내용을 알려 주세요. ' +
+    '오류: ' + (window.__loadErrors.join(' / ') || '없음') + ' · 브라우저: ' + navigator.userAgent;
+  document.querySelector('main').insertBefore(errBox, document.querySelector('main').firstChild);
+  return;
+}
+var EDITION = /*__EDITION__*/'public'; // 'public'(체험 버전) | 'private'(개인 빌드, 잠금 없음)
+var APP_VERSION = /*__VERSION__*/'dev';
+var LICENSE_ENDPOINT = /*__LICENSE_ENDPOINT__*/''; // 이용권 확인 서버 주소(Phase 1). 비어 있으면 확인할 수 없다
+var PURCHASE_URL = /*__PURCHASE_URL__*/'#';
+var DEFAULTS = /*__DEFAULTS__*/null;
+var PARAMS = /*__PARAMS__*/null;
+var DEMO = /*__DEMO__*/null; // 체험 버전: 가상 샘플의 유료 결과(미리 계산)
+var SAMPLE_SETTINGS = /*__SAMPLE_SETTINGS__*/null;
+if (DEMO) E.setDemo(DEMO);
+var REFUND_RULES = /*__REFUND_RULES__*/null; // 환급 점검: 규칙 값(확인 전)
+var REFUND_DEMO = /*__REFUND_DEMO__*/null; // 환급 점검: 체험 시나리오와 미리 계산한 결과
+var RR = null; // 환급 점검 계산 모듈(개인 빌드는 바로, 체험 버전은 이용권 확인 뒤 서버에서)
+if (window.RentalLedgerRefundFactory) RR = window.RentalLedgerRefundFactory();
+var SAMPLE_CSV = /*__SAMPLE__*/null;
+
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
+var fmt = function (n) { return (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('ko-KR'); };
+
+// 입력한 금액을 한글로 풀어 보여 준다: 300000000 → "3억 원" (쉼표 숫자는 입력칸이 보여 준다)
+function wonText(n) {
+  if (!isFinite(n)) return '';
+  var neg = n < 0 ? '-' : '', a = Math.abs(Math.round(n));
+  if (a < 10000) return ''; // 입력칸에 이미 쉼표로 보이므로 만 원 미만은 풀어 쓰지 않는다
+  var eok = Math.floor(a / 1e8), man = Math.floor((a % 1e8) / 1e4), rest = a % 1e4, parts = [];
+  if (eok) parts.push(eok.toLocaleString('ko-KR') + '억');
+  if (man) parts.push(man.toLocaleString('ko-KR') + '만');
+  if (rest) parts.push(rest.toLocaleString('ko-KR'));
+  return neg + parts.join(' ') + ' 원';
+}
+var MONEY_KEYS = ['b.cost', 'b.landCost', 'b.accumDepOpening', 'o.cash', 'o.deposit', 'o.vatOut', 'o.vatIn', 'depositInterestIncome',
+  'donationExcess', 'donationCarryover', 'vatTaxBase', 'vatZeroRate', 'vatExempt', 'vatDeemedRent', 'c.computedTax', 'c.totalIncome', 'c.bookIncome'];
+// 금액 입력칸: 입력하는 즉시 자릿수 쉼표를 붙인다 (300000000 → 300,000,000). 계산에는 쉼표를 뺀 숫자를 쓴다.
+function fmtMoney(v) {
+  if (v === '' || v == null) return '';
+  var n = Number(String(v).replace(/,/g, ''));
+  return isFinite(n) ? n.toLocaleString('ko-KR') : String(v);
+}
+function parseMoney(s) { return String(s == null ? '' : s).replace(/[,\s]/g, ''); }
+function formatMoneyInput(el) {
+  var raw = el.value, pos = el.selectionStart == null ? raw.length : el.selectionStart;
+  var digitsBefore = raw.slice(0, pos).replace(/\D/g, '').length;
+  var neg = el.hasAttribute('data-neg') && /^\s*-/.test(raw);
+  var digits = raw.replace(/\D/g, '');
+  var out = (neg ? '-' : '') + (digits ? Number(digits).toLocaleString('ko-KR') : '');
+  if (out === raw) return;
+  el.value = out;
+  if (document.activeElement === el && el.setSelectionRange) { // 커서가 같은 숫자 뒤에 머물도록
+    var n = 0, i = 0;
+    while (i < out.length && n < digitsBefore) { if (/\d/.test(out[i])) n++; i++; }
+    el.setSelectionRange(i, i);
+  }
+}
+function initMoneyFmt() {
+  MONEY_KEYS.forEach(function (k) {
+    var inp = document.querySelector('.in[data-k="' + k + '"]');
+    if (!inp) return;
+    inp.type = 'text'; inp.setAttribute('inputmode', 'numeric'); inp.setAttribute('data-money', ''); inp.autocomplete = 'off';
+    var holder = inp.closest('.fld-input') || inp;
+    var f = document.createElement('div');
+    f.className = 'fmtline'; f.setAttribute('data-fmt-for', k); f.setAttribute('aria-live', 'polite');
+    holder.insertAdjacentElement('afterend', f);
+  });
+}
+function updateFmt() {
+  Array.prototype.forEach.call(document.querySelectorAll('[data-fmt-for]'), function (f) {
+    var inp = document.querySelector('.in[data-k="' + f.getAttribute('data-fmt-for') + '"]');
+    var v = inp && inp.value !== '' ? Number(parseMoney(inp.value)) : NaN;
+    f.textContent = isFinite(v) ? wonText(v) : '';
+  });
+}
+
+var sources = []; // [{label, txs}]
+var last = null;  // 마지막 계산 결과
+
+// ── 단계 진행 상태 ──
+// 1단계(불러오기), 2단계(꼭 입력할 값), 3단계(기본값)를 각각 [반영]해야 결과에 적용된다.
+var applied = { s1: false, s2: false, s3: false };
+var dirty = { s1: false, s2: false, s3: false };    // 반영한 뒤 입력을 바꾼 단계
+var snapReq = null;   // 2단계 반영 시점의 입력
+var snapOpt = null;   // 3단계 반영 시점의 입력
+var baseOpt = null;   // 3단계를 반영하기 전에 쓰는 기본값(폼을 채운 시점의 값)
+var appliedSite = 0;  // 1단계에서 반영한 사업장(시트) 번호
+// 변환 화면은 한 번에 한 단계만 보여 준다(showView). 처음 호출보다 먼저 선언해 둔다
+var view = 1;
+var VIEW_SEC = { 1: 's1', 2: 's2', 3: 's2b', 4: 's3' };
+var SEC_VIEW = { s1: 1, s2: 2, s2b: 3, s3: 4 };
+
+// ── 폼 ↔ 설정 ──
+function setIn(k, v, assumed) {
+  var el = $('.in[data-k="' + k + '"]');
+  if (!el) return;
+  el.value = v == null ? '' : (el.hasAttribute('data-money') ? fmtMoney(v) : v);
+  el.classList.toggle('assumed', !!assumed);
+}
+// 사업장(시트)별 알고 있는 값(개인 빌드 전용): 시트 이름에 key가 들어 있으면 건물분·토지분·취득일 등을 미리 채운다.
+// 항목 [값, confirmed]에서 confirmed=false 는 확인이 필요한 값이라 "입력 필요"로 남긴다.
+var SITE_DEFAULTS = /*__SITE_DEFAULTS__*/[]; // 공개 빌드는 빈 목록. 개인 빌드는 config/site-defaults.private.json을 넣는다
+var siteAuto = {}; // 자동으로 채운 값(사용자가 고쳤는지 알아내기 위해)
+function applySiteDefaults(label) {
+  var lab = String(label || '').replace(/\s+/g, '');
+  var d = SITE_DEFAULTS.filter(function (x) { return lab.indexOf(x.key) >= 0; })[0];
+  // 앞 사업장이 자동으로 채운 칸 중 이 사업장에 값이 없는 칸은 기본 임시값으로 되돌린다
+  var back = { 'b.acquiredOn': DEFAULTS.building.acquiredOn, 'b.accumDepOpening': DEFAULTS.building.accumDepOpening, 'b.cost': DEFAULTS.building.cost, 'b.landCost': DEFAULTS.building.landCost };
+  Object.keys(siteAuto).forEach(function (k) {
+    var el = $('.in[data-k="' + k + '"]');
+    if (el && !(d && d.fields[k]) && parseMoney(el.value) === siteAuto[k]) { setIn(k, back[k], true); delete siteAuto[k]; }
+  });
+  if (!d) return;
+  Object.keys(d.fields).forEach(function (k) {
+    var v = d.fields[k][0], confirmed = d.fields[k][1];
+    var el = $('.in[data-k="' + k + '"]');
+    // 사용자가 직접 고친 칸(임시 표시가 없고 자동으로 채운 값도 아닌 칸)은 덮어쓰지 않는다
+    if (el && (el.classList.contains('assumed') || el.value === '' || parseMoney(el.value) === siteAuto[k])) {
+      setIn(k, v, !confirmed); siteAuto[k] = String(v);
+    }
+  });
+}
+function getIn(k) { var el = $('.in[data-k="' + k + '"]'); if (!el) return ''; return el.hasAttribute('data-money') ? parseMoney(el.value) : el.value; }
+function num(k) { var v = getIn(k); return v === '' ? 0 : Number(v); }
+
+function addRow(tbodyId, cells, assumed) {
+  var tb = $('#' + tbodyId + ' tbody');
+  var tr = document.createElement('tr');
+  tr.innerHTML = cells.map(function (c) {
+    if (c.type === 'select') {
+      return '<td><select>' + c.options.map(function (o) {
+        return '<option value="' + esc(o[0]) + '"' + (o[0] === c.value ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+      }).join('') + '</select></td>';
+    }
+    if (c.type === 'number') { // 표 안의 숫자는 모두 금액: 쉼표 표시. 인출·환급은 음수도 허용
+      var canNeg = tbodyId === 'tOwner' || tbodyId === 'tVat' || tbodyId === 'tLoanPay';
+      return '<td><input type="text" data-money ' + (canNeg ? 'data-neg inputmode="text"' : 'inputmode="numeric"') + ' autocomplete="off" class="' + (assumed ? 'assumed' : '') + '" value="' + esc(fmtMoney(c.value)) + '"></td>';
+    }
+    return '<td><input type="' + c.type + '" class="' + (assumed ? 'assumed' : '') + '" value="' + esc(c.value) + '" ' + (c.ph ? 'placeholder="' + esc(c.ph) + '"' : '') + '></td>';
+  }).join('') + '<td class="c"><button class="small" type="button" data-del>삭제</button></td>';
+  tb.appendChild(tr);
+}
+function fillForm(s, assumed) {
+  var b = s.building, o = s.openingBalances;
+  setIn('year', s.year, false);
+  setIn('vatMode', s.vatMode, assumed);
+  setIn('deemedRentMode', s.deemedRentMode, assumed);
+  setIn('b.cost', b.cost, assumed); setIn('b.landCost', b.landCost || 0, assumed); setIn('b.acquiredOn', b.acquiredOn, assumed);
+  setIn('b.usefulLifeYears', b.usefulLifeYears, assumed); setIn('b.accumDepOpening', b.accumDepOpening, assumed);
+  setIn('b.residualPct', Math.round((b.residualRate || 0) * 10000) / 100, assumed);
+  setIn('b.totalArea', b.totalArea, assumed); setIn('b.depositArea', b.depositArea, assumed);
+  setIn('o.cash', o.cash, assumed); setIn('o.deposit', o.deposit, assumed);
+  setIn('o.vatOut', o.vatOut || '', false); setIn('o.vatIn', o.vatIn || '', false);
+  setIn('depositInterestIncome', s.depositInterestIncome || 0, assumed);
+  setIn('c.computedTax', s.credit ? s.credit.computedTax : '', false);
+  setIn('c.totalIncome', s.credit ? s.credit.totalIncome : '', false);
+  setIn('c.bookIncome', s.credit && s.credit.bookIncome ? s.credit.bookIncome : '', false);
+  setIn('incomeType', s.incomeType || '30', false);
+  setIn('industryCode', s.industryCode || '701201', false);
+  setIn('filingType', s.filingType || '11', false);
+  setIn('donationExcess', s.donationExcess || '', false);
+  setIn('donationCarryover', s.donationCarryover || '', false);
+  var ag = s.agent || {};
+  setIn('agent.name', ag.name || '', false); setIn('agent.phone', ag.phone || '', false);
+  setIn('agent.kind', ag.kind || '', false); setIn('agent.mgmtNo', ag.mgmtNo || '', false); setIn('agent.teamNo', ag.teamNo || '', false);
+  ['tLoans', 'tDeps', 'tOwner', 'tLoanPay', 'tAdj', 'tVat'].forEach(function (id) { $('#' + id + ' tbody').innerHTML = ''; });
+  (s.vatPayments || []).forEach(function (d) { addRow('tVat', [{ type: 'date', value: d.date }, { type: 'number', value: d.amount }], false); });
+  (s.adjustments || []).forEach(function (a) { addAdjRow(a.kind, a.amount, a.reason, a.code); });
+  setIn('vatTaxBase', s.vatTaxBase == null ? '' : s.vatTaxBase, false);
+  setIn('vatZeroRate', s.vatZeroRate || '', false);
+  setIn('vatExempt', s.vatExempt || '', false);
+  setIn('vatDeemedRent', s.vatDeemedRent || '', false);
+  (o.loans || []).forEach(function (l) { addRow('tLoans', [{ type: 'text', value: l.lender }, { type: 'number', value: l.principal }], assumed); });
+  (s.deposits || []).slice(1).forEach(function (d) { addRow('tDeps', [{ type: 'date', value: d.date }, { type: 'number', value: d.amount }], assumed); });
+  (s.ownerFlows || []).forEach(function (d) { addRow('tOwner', [{ type: 'date', value: d.date }, { type: 'number', value: d.amount }], false); });
+  (s.loanRepayments || []).forEach(function (d) { addRow('tLoanPay', [{ type: 'date', value: d.date }, { type: 'number', value: d.amount }], false); });
+  $('#assumeList').innerHTML = (s.assumptions || []).map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('');
+  restrictAssumed();
+  updateAssumeCount();
+  baseOpt = readForm(); // 3단계를 반영하기 전까지 결과에 쓰이는 기본값
+  updateFmt();
+}
+function addAdjRow(kind, amount, reason, code) {
+  var opts = Object.keys(E.ADJUSTMENT_KINDS).map(function (k) { return [k, E.ADJUSTMENT_KINDS[k].cell === 11 ? '⑪ ' + E.ADJUSTMENT_KINDS[k].label : '⑫ ' + E.ADJUSTMENT_KINDS[k].label]; });
+  addRow('tAdj', [{ type: 'select', value: kind || 'disallowExpense', options: opts }, { type: 'number', value: amount == null ? '' : amount }, { type: 'text', value: reason || '', ph: '예: 사적 대출 이자' }, { type: 'text', value: code || '', ph: '제47호 과목코드' }], false);
+}
+function tableRows(id) {
+  return $$('#' + id + ' tbody tr').map(function (tr) { return $$('input, select', tr).map(function (i) { return i.hasAttribute('data-money') ? parseMoney(i.value) : i.value; }); });
+}
+function readForm() {
+  var year = num('year') || 2025;
+  var depositOpening = num('o.deposit');
+  var changes = tableRows('tDeps').filter(function (r) { return r[0] && r[1] !== ''; })
+    .map(function (r) { return { date: E.normDate(r[0]) || r[0], amount: Number(r[1]) }; });
+  var loans = tableRows('tLoans').filter(function (r) { return r[1] !== ''; })
+    .map(function (r) { return { lender: r[0] || '대출', principal: Number(r[1]) }; });
+  var owner = tableRows('tOwner').filter(function (r) { return r[0] && r[1] !== ''; })
+    .map(function (r) { return { date: E.normDate(r[0]) || r[0], amount: Number(r[1]) }; });
+  var ct = num('c.computedTax'), ti = num('c.totalIncome');
+  var adjustments = tableRows('tAdj').filter(function (r) { return r[1] !== ''; })
+    .map(function (r) { return { kind: r[0], amount: Number(r[1]), reason: r[2] || '', code: r[3] || '' }; });
+  return {
+    incomeType: getIn('incomeType') || '30', adjustments: adjustments,
+    industryCode: getIn('industryCode') || '701201', filingType: getIn('filingType') || '11',
+    vatTaxBase: getIn('vatTaxBase') === '' ? null : Number(getIn('vatTaxBase')),
+    vatZeroRate: num('vatZeroRate'), vatExempt: num('vatExempt'), vatDeemedRent: num('vatDeemedRent'),
+    donationExcess: num('donationExcess'), donationCarryover: num('donationCarryover'),
+    agent: { name: getIn('agent.name'), phone: getIn('agent.phone'), kind: getIn('agent.kind'), mgmtNo: getIn('agent.mgmtNo'), teamNo: getIn('agent.teamNo') },
+    year: year, site: '', vatMode: getIn('vatMode'), deemedRentMode: getIn('deemedRentMode'),
+    building: {
+      cost: num('b.cost'), landCost: num('b.landCost'), acquiredOn: getIn('b.acquiredOn'), usefulLifeYears: num('b.usefulLifeYears') || 1,
+      residualRate: num('b.residualPct') / 100,
+      accumDepOpening: num('b.accumDepOpening'), totalArea: num('b.totalArea'), depositArea: num('b.depositArea'),
+    },
+    openingBalances: { cash: num('o.cash'), deposit: depositOpening, loans: loans, vatOut: num('o.vatOut'), vatIn: num('o.vatIn') },
+    vatPayments: tableRows('tVat').filter(function (r) { return r[0] && r[1] !== ''; })
+      .map(function (r) { return { date: E.normDate(r[0]) || r[0], amount: Number(r[1]) }; }),
+    deposits: [{ date: year + '-01-01', amount: depositOpening }].concat(changes),
+    depositInterestIncome: num('depositInterestIncome'),
+    ownerFlows: owner,
+    loanRepayments: tableRows('tLoanPay').filter(function (r) { return r[0] && r[1] !== ''; })
+      .map(function (r) { return { date: E.normDate(r[0]) || r[0], amount: Number(r[1]) }; }),
+    credit: ct > 0 && ti > 0 ? { computedTax: ct, totalIncome: ti, bookIncome: num('c.bookIncome') || 0 } : null,
+    assumptions: DEFAULTS.assumptions,
+  };
+}
+// 임시값 표시(노란 칸)는 "꼭 입력할 값"에만 둔다. 기본값은 바꾸지 않아도 되므로 표시하지 않는다.
+function restrictAssumed() {
+  $$('#s2 .assumed, #s2b .assumed').forEach(function (el) { if (!el.closest('[data-req]')) el.classList.remove('assumed'); });
+}
+function pendingRequired() { return $$('#reqBox [data-req]').filter(function (el) { return !el.classList.contains('ok'); }).length; }
+function updateAssumeCount() {
+  var els = $$('#reqBox [data-req]');
+  els.forEach(function (el) { el.classList.toggle('ok', !el.querySelector('.assumed')); });
+  var pending = pendingRequired(), total = els.length;
+  $('#reqBox').classList.toggle('alldone', pending === 0);
+  var p = $('#reqProgress');
+  p.className = 'req-progress ' + (pending ? 'pending' : 'complete');
+  p.textContent = pending
+    ? (total - pending) + ' / ' + total + '개 입력함 · 임시값 ' + pending + '개'
+    : total + '개 모두 입력함 ✓';
+  var bar = $('#reqBar'); if (bar) bar.style.width = Math.round(((total - pending) / total) * 100) + '%';
+  $('#assumeCount').textContent = '꼭 입력할 값 중 ' + pending + '개 남음';
+}
+// 칸을 고치거나 눌러서 확인하면 임시값 표시를 없앤다. 표의 줄은 줄 전체를 한 번에 확인한 것으로 본다.
+function confirmEl(el) {
+  if (!el.classList || !el.classList.contains('assumed')) return;
+  var row = el.closest('tr');
+  (row ? $$('input.assumed, select.assumed', row) : [el]).forEach(function (t) { t.classList.remove('assumed'); });
+  updateAssumeCount();
+}
+// 반영한 단계의 입력을 바꾸면 "수정됨"으로 표시하고 다시 반영하게 한다
+function markDirty(el) {
+  var sec = el && el.closest && el.closest('section.step');
+  if (!sec || el.id === 'file' || el.id === 'loadJson') return;
+  if (sec.id === 's1' && applied.s1) dirty.s1 = true;
+  if (sec.id === 's2' && applied.s2) dirty.s2 = true;
+  if (sec.id === 's2b' && applied.s3) dirty.s3 = true;
+  updateSteps();
+}
+document.addEventListener('input', function (e) { if (e.target.hasAttribute && e.target.hasAttribute('data-money')) formatMoneyInput(e.target); confirmEl(e.target); markDirty(e.target); updateFmt(); });
+document.addEventListener('change', function (e) { if (e.target.hasAttribute && e.target.hasAttribute('data-money')) formatMoneyInput(e.target); confirmEl(e.target); markDirty(e.target); updateFmt(); });
+document.addEventListener('focusout', function (e) { if (e.target.closest && e.target.closest('#reqBox')) confirmEl(e.target); });
+document.addEventListener('click', function (e) {
+  var t = e.target;
+  if (t.hasAttribute && t.hasAttribute('data-del')) { var holder = t.closest('tr'); markDirty(holder); holder.remove(); return; }
+  var add = t.getAttribute && t.getAttribute('data-add');
+  if (add) markDirty(t);
+  if (add === 'loans') addRow('tLoans', [{ type: 'text', value: '', ph: '은행' }, { type: 'number', value: '' }], false);
+  if (add === 'deps') addRow('tDeps', [{ type: 'date', value: '' }, { type: 'number', value: '' }], false);
+  if (add === 'loanpay') addRow('tLoanPay', [{ type: 'date', value: '' }, { type: 'number', value: '' }], false);
+  if (add === 'owner') addRow('tOwner', [{ type: 'date', value: '' }, { type: 'number', value: '' }], false);
+  if (add === 'adj') addAdjRow();
+  if (add === 'vat') addRow('tVat', [{ type: 'date', value: '' }, { type: 'number', value: '' }], false);
+});
+
+// ── 파일 읽기 ──
+function findHeader(table) {
+  for (var i = 0; i < Math.min(table.length, 8); i++) {
+    var keys = table[i].map(function (c) { return String(c).replace(/\s+/g, ''); });
+    if (keys.indexOf('날짜') >= 0 && keys.indexOf('공급가액') >= 0) return i;
+  }
+  return -1;
+}
+function setSources(list, info, detail, kind) {
+  sources = list;
+  showChooser(false, kind || 'file');
+  var sel = $('#siteSel');
+  sel.value = '0';
+  if (list[0]) applySiteDefaults(list[0].label);
+  $('#siteBtns').innerHTML = list.map(function (s, i) { return '<button type="button" class="sitebtn' + (i === 0 ? ' on' : '') + '" data-i="' + i + '" aria-pressed="' + (i === 0) + '">' + esc(s.label) + ' <span>' + s.txs.length + '건</span></button>'; }).join('');
+  $('#siteWrap').classList.toggle('hidden', list.length < 2);
+  $('#fileInfo').textContent = info;
+  $('#fileInfo').className = 'fileinfo loaded';
+  var d = $('#importDetail');
+  if (detail) { $('#importDetailBody').textContent = detail; d.classList.remove('hidden'); } else { d.classList.add('hidden'); }
+}
+// 1단계: 장부를 고르기 전에는 두 선택지(내 장부 / 가상 샘플)를 보여 주고, 고른 뒤에는 어느 쪽을 쓰는지 한 줄로만 보여 준다
+function showChooser(show, kind) {
+  $('#startPick').classList.toggle('hidden', !show && sources.length > 0);
+  $('#btnChangeSrc').classList.toggle('hidden', show || !sources.length);
+  var badge = $('#srcBadge');
+  if (kind) { badge.textContent = kind === 'sample' ? '가상 샘플' : '내 장부'; badge.className = 'srcbadge' + (kind === 'sample' ? '' : ' file'); }
+  if (!sources.length) badge.classList.add('hidden');
+}
+$('#btnChangeSrc').addEventListener('click', function () { showChooser(true); });
+function sourcesFromTxs(txs, label) {
+  var sites = {};
+  txs.forEach(function (t) { var k = t.site || label; (sites[k] = sites[k] || []).push(t); });
+  return Object.keys(sites).map(function (k) { return { label: k, txs: sites[k] }; });
+}
+function decodeCsv(buf) {
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch (e) { return new TextDecoder('euc-kr').decode(buf); }
+}
+function loadFile(file) {
+  var reader = new FileReader();
+  reader.onerror = function () { showError('파일을 읽지 못했습니다.'); };
+  reader.onload = function () {
+    try {
+      var buf = reader.result;
+      if (/\.csv$/i.test(file.name)) {
+        var txs = E.parseLedgerCsv(decodeCsv(buf), { site: file.name.replace(/\.csv$/i, '') });
+        setSources(sourcesFromTxs(txs, file.name), file.name + ' · 거래 ' + txs.length + '건을 읽었습니다.',
+          'CSV의 거래 열만 가져옵니다. 거래처(상호) 열은 가져오지 않습니다. 열 이름은 ' + E.IMPORTED_COLUMNS.join(', ') + '입니다.');
+      } else {
+        if (typeof XLSX === 'undefined') { showError('엑셀 읽기 라이브러리를 불러오지 못했습니다(인터넷 연결 필요). CSV로 저장해서 올려 주세요.'); return; }
+        var wb = XLSX.read(buf, { type: 'array' });
+        var list = [], skipped = [], otherTables = [];
+        wb.SheetNames.forEach(function (name) {
+          var table = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
+          var h = findHeader(table);
+          if (h < 0) { skipped.push(name); otherTables.push(table); return; }
+          var txs = E.parseLedgerRows(table.slice(h), { site: name });
+          if (txs.length) list.push({ label: name, txs: txs });
+        });
+        if (!list.length) { showError('거래 시트를 찾지 못했습니다. 머리글에 "날짜"와 "공급가액"이 있어야 합니다.'); return; }
+        // 거래 시트에서는 계산에 쓰는 열만 읽고, 이미 엑셀에 들어 있는 업종코드는 자동으로 채운다
+        var code = E.detectIndustryCode(otherTables);
+        if (code) setIn('industryCode', code, false);
+        setSources(list, file.name + ' · 거래 시트 ' + list.length + '개를 읽었습니다 (' + list.map(function (s) { return s.label; }).join(', ') + ')',
+          '가져온 열: ' + E.IMPORTED_COLUMNS.join(', ') + '. 거래처(상호) 등 나머지 열은 가져오지 않습니다.' +
+          (skipped.length ? ' 읽지 않은 시트: ' + skipped.join(', ') + '.' : '') +
+          (code ? ' 업종코드 ' + code + '를 엑셀에서 읽어 채웠습니다.' : ''));
+      }
+      clearError();
+      resetSteps(); // 새 파일이면 1단계부터 다시 반영한다
+    } catch (err) { showError('불러오기 실패: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+$('#siteBtns').addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('.sitebtn'); if (!b) return;
+  $$('.sitebtn').forEach(function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+  $('#siteSel').value = b.getAttribute('data-i');
+  applySiteDefaults(sources[Number(b.getAttribute('data-i'))].label);
+  $('#siteSel').dispatchEvent(new Event('change', { bubbles: true }));
+});
+$('#file').addEventListener('change', function (e) { if (e.target.files[0]) loadFile(e.target.files[0]); });
+// 끌어다 놓기
+(function () {
+  var drop = $('#drop');
+  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) {
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+  // 창 어디에 놓아도 브라우저가 파일을 열어 버리지 않게 막는다
+  ['dragover', 'drop'].forEach(function (ev) { window.addEventListener(ev, function (e) { if (!drop.contains(e.target)) e.preventDefault(); }); });
+})();
+$('#btnSample').addEventListener('click', function () {
+  var txs = E.parseLedgerCsv(SAMPLE_CSV);
+  setSources(sourcesFromTxs(txs, '샘플'), '상가A·상가B 예시 거래를 불러왔습니다. 실제 데이터가 아닙니다.', null, 'sample');
+  fillForm(sampleSettings(), true);
+  clearError(); resetSteps();
+});
+function sampleSettings() { return JSON.parse(JSON.stringify(SAMPLE_SETTINGS)); }
+
+// ── 이용권·체험 버전 잠금 (Phase 0: 화면 잠금, 우회 가능. 서버 확인은 Phase 1) ──
+var license = { ok: EDITION === 'private', email: '', expires: '' };
+var LOCK_MSG = {
+  upload: '내 간편장부 파일을 불러오려면 이용권이 필요합니다.',
+  tab: '조정계산서·홈택스 입력값 같은 신고용 결과는 이용권이 필요합니다.',
+  print: '인쇄·PDF 저장은 이용권이 필요합니다.',
+  csv: '분개장 내보내기는 이용권이 필요합니다.',
+  save: '입력값 저장은 이용권이 필요합니다.',
+  refund: '환급 점검에 내 값을 입력하려면 이용권이 필요합니다. 가상 예시는 이용권 없이 볼 수 있습니다.',
+  load: '저장한 입력값 불러오기는 이용권이 필요합니다.'
+};
+var LOCKED_TABS = ['hx', 'adj', 'adjrev', 'a47'];
+function locked() { return !license.ok; }
+// 체험 버전: 입력이 가상 샘플 그대로면(r.demo) 유료 탭의 결과도 미리 계산한 값으로 보여 준다
+function isTabLocked(id) { return locked() && LOCKED_TABS.indexOf(id) >= 0 && !(last && last.res && last.res.demo); }
+function lockPanelHtml(t) {
+  return '<div class="lockpanel noprint"><h3>\uD83D\uDD12 ' + esc(t.title || t.label) + '은(는) 이용권이 필요합니다</h3>' +
+    '<p>체험 버전에서는 가상 샘플 그대로의 결과를 모든 탭에서 볼 수 있습니다. 값을 바꾸거나 내 장부로 계산하려면 이용권이 필요합니다.</p>' +
+    '<button type="button" class="primary" data-open-license="tab">이용권 입력</button></div>';
+}
+function openLic(why) {
+  var d = $('#licDlg'); if (!d) return;
+  $('#licWhy').textContent = why || '구매 후 이메일로 받은 6자리 코드를 입력하세요.';
+  $('#licMsg').textContent = ''; $('#licCode').value = ''; $('#licAgree').checked = false;
+  $('#licBuy').setAttribute('href', PURCHASE_URL);
+  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else { d.setAttribute('open', ''); }
+  setTimeout(function () { var e = $('#licEmail'); if (e) e.focus(); }, 30);
+}
+function closeLic() { var d = $('#licDlg'); if (d && d.open) d.close(); }
+var LIC_KEY = 'jangbu.lic', DEV_KEY = 'jangbu.dev';
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function deviceId() {
+  var d = lsGet(DEV_KEY);
+  if (!d || d.length < 8) {
+    d = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'd' + Date.now() + Math.random().toString(36).slice(2);
+    lsSet(DEV_KEY, d);
+  }
+  return d;
+}
+function licPost(route, body) {
+  return fetch(LICENSE_ENDPOINT.replace(/\/+$/, '') + route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j || {} }; }); });
+}
+function saveLicense(j) {
+  license.email = j.emailMask || license.email; license.expires = j.expires || '';
+  lsSet(LIC_KEY, JSON.stringify({ token: j.token, tokenExp: j.tokenExp, expires: j.expires, mask: license.email, plan: j.plan }));
+}
+function clearLicense() {
+  lsDel(LIC_KEY); license.email = ''; license.expires = '';
+  if (EDITION !== 'private') { license.ok = false; E.setPaid(null); RR = null; }
+}
+// 유료 계산 모듈은 이용권 토큰으로 서버에서 받아 메모리에서만 실행한다(저장하지 않는다). 받으면 화면이 열린다.
+function loadPaid(token) {
+  return licPost('/api/module', { token: token }).then(function (x) {
+    if (!x.j.ok) return { ok: false, status: x.status, msg: x.j.msg };
+    var factory;
+    try { factory = new Function(x.j.code + '\n;return { paid: create, refund: typeof createRefund === "function" ? createRefund : null };')(); } catch (e) { return { ok: false, status: 0, msg: '계산 모듈을 불러오지 못했습니다.' }; }
+    E.setPaid(factory.paid); if (factory.refund) RR = factory.refund();
+    saveLicense(Object.assign({ emailMask: license.email }, x.j));
+    license.ok = true;
+    return { ok: true };
+  });
+}
+function afterLicenseChange() { applyEdition(); if (last) { run(); } if (typeof rcRefresh === 'function') rcRefresh(); }
+function verifyLicense(email, code) {
+  if (!LICENSE_ENDPOINT) return Promise.resolve({ ok: false, msg: '이용권 확인 서버가 아직 준비되지 않았습니다. 구매자에게는 곧 열립니다.' });
+  return licPost('/api/verify', { email: email, code: code, deviceId: deviceId() })
+    .then(function (x) {
+      if (!x.j.ok) return { ok: false, msg: x.j.msg || '확인하지 못했습니다. 잠시 뒤 다시 시도해 주세요.' };
+      license.email = x.j.emailMask || '';
+      return loadPaid(x.j.token).then(function (r) { return r.ok ? { ok: true } : { ok: false, msg: r.msg || '계산 모듈을 받지 못했습니다. 잠시 뒤 다시 시도해 주세요.' }; });
+    })
+    .catch(function () { return { ok: false, msg: '서버에 연결하지 못했습니다. 인터넷 연결을 확인해 주세요.' }; });
+}
+// 저장한 이용권 복원: 토큰으로 서버에서 계산 모듈을 다시 받는다. 서버가 거절하면 지우고 잠근다.
+// 계산 모듈은 서버에서만 받으므로 오프라인에서는 열리지 않는다(체험 기능은 그대로 쓸 수 있다).
+function restoreLicense() {
+  if (EDITION === 'private' || !LICENSE_ENDPOINT) return;
+  var raw = lsGet(LIC_KEY), s = null;
+  if (!raw) return;
+  try { s = JSON.parse(raw); } catch (e) { lsDel(LIC_KEY); return; }
+  var now = Math.floor(Date.now() / 1000), GRACE = 3 * 24 * 3600;
+  var today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  if (!s.token || !s.tokenExp || s.tokenExp + GRACE < now || (s.expires && s.expires < today)) { lsDel(LIC_KEY); return; }
+  license.email = s.mask || ''; license.expires = s.expires || '';
+  loadPaid(s.token)
+    .then(function (r) {
+      if (r.ok) { afterLicenseChange(); return; }
+      if (r.status === 401 || r.status === 403) { clearLicense(); afterLicenseChange(); toast(r.msg || '이용권을 다시 입력해 주세요'); }
+      else { toast(r.msg || '계산 모듈을 받지 못했습니다. 잠시 뒤 다시 시도해 주세요.'); }
+    })
+    .catch(function () { toast('서버에 연결하지 못했습니다. 인터넷 연결을 확인해 주세요.'); });
+}
+document.addEventListener('click', function (e) {
+  var t = e.target, id = null;
+  if (!t || !t.closest) return;
+  if (t.closest('#btnLicOpen')) return; // 박스 안의 이용권 입력 버튼은 자기 동작만 한다(업로드 잠금 안내·파일 선택으로 넘기지 않음)
+  var op = t.closest('[data-open-license]');
+  if (op) { openLic(LOCK_MSG[op.getAttribute('data-open-license')]); return; }
+  if (!locked()) return;
+  if (t.closest('#drop')) id = 'upload';
+  else if (t.closest('#btnPrint')) id = 'print';
+  else if (t.closest('#btnJournalCsv')) id = 'csv';
+  else if (t.closest('#btnSave')) id = 'save';
+  else if (t.closest('label[for="loadJson"]') || t.id === 'loadJson') id = 'load';
+  if (id) { e.preventDefault(); e.stopPropagation(); openLic(LOCK_MSG[id]); }
+}, true);
+document.addEventListener('drop', function (e) {
+  if (!locked()) return;
+  if (e.target && e.target.closest && e.target.closest('#drop')) { e.preventDefault(); e.stopPropagation(); openLic(LOCK_MSG.upload); }
+}, true);
+var _loadFile = loadFile;
+loadFile = function (f) { if (locked()) { openLic(LOCK_MSG.upload); return; } return _loadFile(f); };
+$('#btnLicOpen').addEventListener('click', function () { openLic(); });
+$('#licCancel').addEventListener('click', closeLic);
+$('#licOk').addEventListener('click', function () {
+  var email = $('#licEmail').value.trim(), code = $('#licCode').value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('#licMsg').textContent = '이메일을 확인해 주세요.'; return; }
+  if (!/^[0-9]{6}$/.test(code)) { $('#licMsg').textContent = '코드는 숫자 6자리입니다.'; return; }
+  if (!$('#licAgree').checked) { $('#licMsg').textContent = '약관·처리방침·환불 안내에 동의해 주세요.'; return; }
+  $('#licMsg').textContent = '확인하는 중...';
+  verifyLicense(email, code).then(function (r) {
+    if (r.ok) { closeLic(); afterLicenseChange(); toast('이용권을 확인했습니다'); }
+    else { $('#licMsg').textContent = r.msg; }
+  });
+});
+function applyEdition() {
+  $('#editionBanner').classList.toggle('hidden', !locked());
+  $('#btnLicOpen').classList.toggle('hidden', !locked());
+  var chip = $('#licChip');
+  if (chip) { var show = EDITION === 'public' && license.ok; chip.classList.toggle('hidden', !show); chip.textContent = show ? '이용권 사용 중 · ' + (license.email || '') + (license.expires ? ' · ' + license.expires + '까지' : '') : ''; }
+  var v = $('#verTag'); if (v) v.textContent = 'v' + APP_VERSION + (EDITION === 'public' ? ' (체험 버전)' : ' (개인 빌드)');
+}
+restoreLicense();
+applyEdition();
+showView(1);
+/*__REFUND_UI__*/
+
+// ── 오류 표시 ──
+function showError(m) { var el = $('#fileInfo'); el.textContent = m; el.className = 'fileinfo bad'; }
+function clearError() { $('#fileInfo').className = 'fileinfo' + (sources.length ? ' loaded' : ''); }
+// 짧은 알림 (스크린 리더에도 읽힌다)
+var toastTimer = null;
+function toast(msg) {
+  var t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+}
+
+// ── 계산 ──
+// 결과에 쓰는 입력: 2단계에서 반영한 "꼭 입력할 값" + 3단계에서 반영한 나머지(반영 전에는 기본값)
+function effectiveSettings() {
+  var req = snapReq;
+  var eff = JSON.parse(JSON.stringify(snapOpt || baseOpt || readForm()));
+  eff.building.cost = req.building.cost;
+  eff.building.landCost = req.building.landCost;
+  eff.building.acquiredOn = req.building.acquiredOn;
+  eff.building.accumDepOpening = req.building.accumDepOpening;
+  eff.openingBalances.cash = req.openingBalances.cash;
+  eff.openingBalances.deposit = req.openingBalances.deposit;
+  eff.openingBalances.loans = req.openingBalances.loans;
+  eff.deposits = [{ date: eff.deposits[0].date, amount: req.openingBalances.deposit }].concat(eff.deposits.slice(1));
+  return eff;
+}
+function run() {
+  if (!applied.s1 || !applied.s2 || !sources.length) { return; }
+  var src = sources[appliedSite] || sources[0];
+  try {
+    var settings = effectiveSettings();
+    settings.site = src.label;
+    last = { site: src.label, settings: settings, res: E.run(src.txs, settings, PARAMS) };
+    render(last);
+  } catch (err) {
+    last = null; $('#result').classList.add('hidden'); $('#resultEmpty').classList.remove('hidden');
+    $('#resultEmpty').innerHTML = '<span class="bad">계산 실패: ' + esc(err.message) + '</span>';
+  }
+}
+
+// ── 단계 [반영] ──
+function resetSteps() {
+  applied = { s1: false, s2: false, s3: false };
+  dirty = { s1: false, s2: false, s3: false };
+  snapReq = null; snapOpt = null; last = null;
+  $('#result').classList.add('hidden'); $('#resultEmpty').classList.remove('hidden');
+  $('#resultEmpty').textContent = '1~2단계를 반영하면 결과가 여기에 표시됩니다.';
+  ['msg1', 'msg2', 'msg3'].forEach(function (id) { $('#' + id).textContent = ''; });
+  $('#msg1').textContent = sources.length ? '사업장을 확인하고 눌러 주세요.' : '';
+  showView(1);
+}
+// 변환 화면은 한 번에 한 단계만 보여 준다: [반영]을 누르면 다음 화면으로 넘어간다
+function showView(n) {
+  view = n;
+  Object.keys(VIEW_SEC).forEach(function (k) { var el = document.getElementById(VIEW_SEC[k]); if (el) el.classList.toggle('viewhide', Number(k) !== n); });
+  updateSteps();
+}
+function scrollToStep(id) {
+  showView(SEC_VIEW[id] || 1);
+  var el = document.getElementById(id);
+  var wrap = document.querySelector('.stepper-wrap');
+  var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (wrap && wrap.scrollIntoView) wrap.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+  var h = el && el.querySelector('h2');
+  if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+}
+function apply1() {
+  if (!sources.length) return;
+  appliedSite = Number($('#siteSel').value) || 0;
+  applied.s1 = true; dirty.s1 = false;
+  $('#msg1').textContent = '반영됨 · ' + sources[appliedSite].label + ' (' + sources[appliedSite].txs.length + '건)';
+  if (applied.s2) run(); // 사업장을 바꿔 다시 반영한 경우 결과도 갱신
+  updateSteps();
+  toast('1단계를 반영했습니다');
+  scrollToStep(applied.s2 ? 's3' : 's2');
+}
+function apply2() {
+  if (!applied.s1) return;
+  snapReq = readForm();
+  applied.s2 = true; dirty.s2 = false;
+  var pending = pendingRequired();
+  $('#msg2').innerHTML = (pending ? '임시값 ' + pending + '개가 남은 채로 반영했습니다. ' : '필수 값을 모두 확인했습니다. ') +
+    '<a href="#s3" data-goto-step="s3">바로 결과 보기</a>';
+  run(); updateSteps();
+  toast(pending ? '결과를 만들었습니다 · 임시값 ' + pending + '개 포함' : '결과를 만들었습니다');
+  scrollToStep('s2b');
+}
+function apply3() {
+  if (!applied.s2) return;
+  snapOpt = readForm();
+  applied.s3 = true; dirty.s3 = false;
+  $('#msg3').innerHTML = '반영됨 · <a href="#s3" data-goto-step="s3">결과 보기</a>';
+  run(); updateSteps();
+  toast('3단계를 반영했습니다');
+  scrollToStep('s3');
+}
+$('#btnApply1').addEventListener('click', apply1);
+$('#btnApply2').addEventListener('click', apply2);
+$('#btnApply3').addEventListener('click', apply3);
+$('#btnReset').addEventListener('click', function () {
+  fillForm(DEFAULTS, true);
+  if (applied.s2) dirty.s2 = true;
+  if (applied.s3) dirty.s3 = true;
+  updateSteps();
+});
+
+// 단계 표시줄, 잠금, 상태 배지를 현재 상태에 맞춘다
+function updateSteps() {
+  var haveSrc = sources.length > 0;
+  var st = function (done, isDirty, ready, labels) { return isDirty ? labels.dirty : (done ? labels.done : (ready ? labels.ready : labels.locked)); };
+  var s1 = st(applied.s1, dirty.s1, haveSrc, { dirty: '수정됨', done: '반영됨', ready: '반영 필요', locked: '파일 고르기' });
+  var s2 = st(applied.s2, dirty.s2, applied.s1, { dirty: '수정됨', done: '반영됨', ready: '반영 필요', locked: '1단계 먼저' });
+  var s3 = st(applied.s3, dirty.s3, applied.s2, { dirty: '수정됨', done: '반영됨', ready: '선택', locked: '2단계 먼저' });
+  var stale = dirty.s1 || dirty.s2 || dirty.s3;
+  var s4 = applied.s2 ? (stale ? '다시 반영 필요' : '최신') : '2단계 후';
+  // 지금 할 단계: 반영이 안 됐거나 수정된 첫 단계 (3단계는 선택이지만 안내 대상)
+  var current = (!applied.s1 || dirty.s1) ? 1 : (!applied.s2 || dirty.s2) ? 2 : (!applied.s3 || dirty.s3) ? 3 : 4;
+  var info = [
+    { n: 1, text: s1, cls: dirty.s1 ? 'dirty' : applied.s1 ? 'done' : haveSrc ? 'ready' : '' },
+    { n: 2, text: s2, cls: dirty.s2 ? 'dirty' : applied.s2 ? 'done' : applied.s1 ? 'ready' : '' },
+    { n: 3, text: s3, cls: dirty.s3 ? 'dirty' : applied.s3 ? 'done' : applied.s2 ? 'ready' : '' },
+    { n: 4, text: s4, cls: !applied.s2 ? '' : stale ? 'dirty' : 'done' },
+  ];
+  info.forEach(function (x) {
+    var li = $('#stepper li[data-step="' + x.n + '"]');
+    li.className = x.cls; li.querySelector('.st').textContent = x.text;
+    if (x.n === view) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    li.querySelector('button').disabled = (x.n === 2 && !applied.s1) || (x.n >= 3 && !applied.s2);
+    var badge = $('#stat' + x.n);
+    if (badge) { badge.textContent = x.text; badge.className = 'stepstat' + (x.cls === 'done' || x.cls === 'dirty' ? ' ' + x.cls : ''); }
+  });
+  // 앞 단계를 반영하기 전에는 다음 단계를 잠근다
+  var lock = function (id, locked) { var el = $('#' + id); el.classList.toggle('locked', locked); el.inert = locked; el.setAttribute('aria-disabled', locked ? 'true' : 'false'); };
+  lock('s2', !applied.s1);
+  lock('s2b', !applied.s2);
+  $('#s3').classList.toggle('hidden', !applied.s2);
+  $('#btnApply1').disabled = !haveSrc;
+  $('#btnApply2').disabled = !applied.s1;
+  $('#btnApply3').disabled = !applied.s2;
+  $('#btnApply1').textContent = applied.s1 ? '1단계 다시 반영' : '1단계 반영';
+  $('#btnApply2').textContent = applied.s2 ? '2단계 다시 반영' : '2단계 반영';
+  $('#btnApply3').textContent = applied.s3 ? '3단계 다시 반영 · 결과 보기' : '3단계 반영 · 결과 보기';
+  var meta = $('#resultMeta');
+  if (meta && last) meta.textContent = last.site + ' · ' + last.settings.year + '년 귀속 · ' + (pendingRequired() ? '임시값 ' + pendingRequired() + '개 포함' : '입력값 확인 완료') + (EDITION === 'public' && license.email ? ' · 이용권 ' + license.email : '');
+  var banner = $('#staleBanner');
+  banner.classList.toggle('hidden', !(applied.s2 && stale));
+  banner.textContent = '입력을 바꿨지만 아직 반영하지 않았습니다. 아래 결과는 이전에 반영한 값 기준입니다. 바꾼 단계의 [반영]을 눌러 주세요.';
+}
+// 단계 표시줄을 누르면 그 단계로 이동
+$('#stepper').addEventListener('click', function (e) {
+  var li = e.target.closest && e.target.closest('li[data-step]');
+  if (!li || li.querySelector('button').disabled) return;
+  scrollToStep({ 1: 's1', 2: 's2', 3: 's2b', 4: 's3' }[li.getAttribute('data-step')]);
+});
+
+// ── 렌더링 ──
+function tr(cols, cls) { return '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' + cols.join('') + '</tr>'; }
+function td(v, cls) { return '<td' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</td>'; }
+function money(v) { return td(fmt(v), 'n'); }
+function code(c) { return td(c == null ? '' : c, 'c'); }
+
+function incomeTable(r) {
+  var st = r.statements.income;
+  var rows = [];
+  rows.push(tr([td('Ⅰ. 매출액'), code('01'), money(st.revenue)], 'sum'));
+  rows.push(tr([td('5. 임대수입'), code('06'), money(st.revenue)], 'sub'));
+  rows.push(tr([td('Ⅱ. 매출원가'), code('09'), money(0)], 'sum'));
+  rows.push(tr([td('Ⅲ. 매출총이익'), code('20'), money(st.revenue)], 'sum'));
+  rows.push(tr([td('Ⅳ. 판매비와관리비'), code('21'), money(st.sgaTotal)], 'sum'));
+  st.sga.forEach(function (s) { rows.push(tr([td(esc(s.name)), code(s.code), money(s.amount)], 'sub')); });
+  rows.push(tr([td('Ⅴ. 영업손익'), code('62'), money(st.operatingIncome)], 'sum'));
+  rows.push(tr([td('Ⅵ. 영업외수익'), code('63'), money(st.nonOperatingIncomeTotal)], 'sum'));
+  rows.push(tr([td('1. 이자수익 (보증금 예금이자)'), code('64'), money(st.nonOperatingIncome[0].amount)], 'sub'));
+  rows.push(tr([td('Ⅶ. 영업외비용'), code('81'), money(st.nonOperating[0].amount)], 'sum'));
+  rows.push(tr([td('1. 이자비용'), code('82'), money(st.nonOperating[0].amount)], 'sub'));
+  rows.push(tr([td('Ⅷ. 당기순손익'), code('99'), money(st.netIncome)], 'sum'));
+  return '<table><thead><tr><th>계정과목</th><th class="c">코드</th><th class="n">금액</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>';
+}
+function balanceTable(r) {
+  var b = r.statements.balance, a = b.assets, l = b.liabilities, e = b.equity;
+  var left = [
+    tr([td('Ⅰ. 유동자산'), code('01'), money(a.cash + a.vatIn)], 'sum'),
+    tr([td('현금및현금성자산'), code('03'), money(a.cash)], 'sub'),
+  ];
+  if (a.vatIn) left.push(tr([td('부가세대급금(기타)'), code('17'), money(a.vatIn)], 'sub'));
+  left.push(tr([td('Ⅱ. 비유동자산'), code('29'), money(a.land + a.buildingNet)], 'sum'));
+  if (a.land) left.push(tr([td('토지'), code('39'), money(a.land)], 'sub'));
+  left.push(tr([td('건물 (장부가액)'), code('40'), money(a.buildingNet)], 'sub'));
+  left.push(tr([td('&nbsp;&nbsp;취득가액'), code(''), money(a.building)], 'sub'));
+  left.push(tr([td('&nbsp;&nbsp;감가상각누계액'), code(''), money(a.accumDep)], 'sub'));
+  left.push(tr([td('자산총계'), code('62'), money(a.total)], 'sum'));
+  var right = [
+    tr([td('Ⅰ. 유동부채'), code('63'), money(l.vatOut)], 'sum'),
+  ];
+  if (l.vatOut) right.push(tr([td('예수금(부가세)'), code('68'), money(l.vatOut)], 'sub'));
+  right.push(tr([td('Ⅱ. 비유동부채'), code('73'), money(l.loan + l.deposit)], 'sum'));
+  right.push(tr([td('장기차입금'), code('74'), money(l.loan)], 'sub'));
+  right.push(tr([td('임대보증금'), code('81'), money(l.deposit)], 'sub'));
+  right.push(tr([td('부채총계'), code('87'), money(l.total)], 'sum'));
+  right.push(tr([td('Ⅲ. 자본금'), code('88'), money(e.capital)], 'sum'));
+  right.push(tr([td('Ⅳ. 당기순이익'), code('89'), money(e.netIncome)], 'sum'));
+  right.push(tr([td('자본총계'), code('90'), money(e.total)], 'sum'));
+  right.push(tr([td('부채및자본총계'), code('91'), money(b.liabilitiesAndEquity)], 'sum'));
+  var head = '<thead><tr><th>계정과목</th><th class="c">코드</th><th class="n">금액</th></tr></thead>';
+  return '<div class="grid2"><div class="scroll"><table>' + head + '<tbody>' + left.join('') + '</tbody></table></div>' +
+    '<div class="scroll"><table>' + head + '<tbody>' + right.join('') + '</tbody></table></div></div>' +
+    '<p>자산 − (부채 + 자본) = <span class="' + (b.difference === 0 ? 'ok' : 'bad') + '">' + fmt(b.difference) + '</span></p>';
+}
+function adjustmentTable(r) {
+  var a = r.adjustment, st = r.statements.income;
+  var types = Object.keys(E.INCOME_TYPES).map(function (k) {
+    return '<tr><td class="c">' + (k === a.incomeType ? '◯' : '') + '</td><td>' + esc(k) + ' ' + esc(E.INCOME_TYPES[k]) + '</td></tr>';
+  }).join('');
+  var rows = [];
+  rows.push(tr([td('⑩ 결산서상 당기순이익'), money(a.c10)], 'sum'));
+  rows.push(tr([td('소득조정'), td('')], 'sum'));
+  rows.push(tr([td('⑪ 총수입금액산입 및 필요경비불산입'), money(a.c11)], 'sum'));
+  a.items11.forEach(function (x) { rows.push(tr([td(esc(x.label) + (x.source === 'auto' ? ' <span class="muted">(자동)</span>' : '')), money(x.amount)], 'sub')); });
+  rows.push(tr([td('⑫ 필요경비산입 및 총수입금액불산입'), money(a.c12)], 'sum'));
+  a.items12.forEach(function (x) { rows.push(tr([td(esc(x.label)), money(x.amount)], 'sub')); });
+  rows.push(tr([td('⑬ 차가감소득 (⑩ + ⑪ − ⑫)'), money(a.c13)], 'sum'));
+  rows.push(tr([td('⑭ 기부금한도초과액'), money(a.c14)]));
+  rows.push(tr([td('⑮ 기부금이월액 중 필요경비 산입액'), money(a.c15)]));
+  rows.push(tr([td('⑯ 해당 과세기간 소득 (⑬ + ⑭ − ⑮)'), money(a.c16)], 'sum'));
+  var f = a.form82;
+  var form82 = '<h2 style="margin:14px 0 6px;font-size:15px">홈택스 입력 대응 (간편장부소득금액계산서 12·13·16·17번)</h2>' +
+    '<table><thead><tr><th>입력칸</th><th class="n">금액</th><th>조정계산서 칸</th></tr></thead><tbody>' +
+    tr([td('12 수입금액에서 제외할 금액'), money(f.c12), td('⑫')]) +
+    tr([td('13 수입금액에 가산할 금액 (간주임대료 포함)'), money(f.c13), td('⑪')]) +
+    tr([td('16 필요경비에서 제외할 금액'), money(f.c16), td('⑪')]) +
+    tr([td('17 필요경비에 가산할 금액'), money(f.c17), td('⑫')]) +
+    '</tbody></table>';
+  var ag = a.agent || {};
+  var agentRows = [['⑰ 성명', ag.name], ['⑱ 전화번호', ag.phone], ['⑲ 대리구분', ag.kind === '1' ? '1. 기장' : ag.kind === '2' ? '2. 신고' : ''], ['⑳ 관리번호', ag.mgmtNo], ['㉑ 조정반번호', ag.teamNo]]
+    .filter(function (x) { return x[1]; });
+  var check = a.c10 + a.c11 - a.c12 + a.c14 - a.c15 === a.c16;
+  return '<p class="muted" style="margin-top:0">조정계산서 (소득세법 시행규칙 별지 제46호서식) 값. 과세기간 ' + last.settings.year + '.01.01~' + last.settings.year + '.12.31 · 사업장 ' + esc(last.site) + '</p>' +
+    '<table style="margin-bottom:10px"><thead><tr><th class="c">선택</th><th>⑨ 소득구분</th></tr></thead><tbody>' + types + '</tbody></table>' +
+    '<table><thead><tr><th>구분</th><th class="n">금액</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>' +
+    form82 +
+    (agentRows.length ? '<table style="margin-top:10px"><tbody>' + agentRows.map(function (x) { return tr([td(x[0]), td(esc(x[1]))]); }).join('') + '</tbody></table>' : '') +
+    '<p>손익계산서 당기순이익 ' + fmt(st.netIncome) + '원에 조정을 더한 값이 ⑯과 같은가: <span class="' + (check && a.c10 === st.netIncome ? 'ok' : 'bad') + '">' + (check && a.c10 === st.netIncome ? '일치' : '불일치') + '</span></p>' +
+    '<p class="muted">필요경비 불산입 여부(사적 대출 이자 등)는 도구가 판단하지 않습니다. 조정 항목은 직접 입력한 값이며 신고 전 세무사 확인이 필요합니다.</p>';
+}
+function rowsTable(rows) {
+  return '<div class="scroll"><table><thead><tr><th class="c">칸</th><th>항목</th><th class="n">값</th><th>메모</th></tr></thead><tbody>' +
+    rows.map(function (x) {
+      var v;
+      if (x.value === null) v = '<span class="bad">입력 필요</span>';
+      else if (typeof x.value === 'number') v = '<button type="button" class="valbtn" data-copy="' + x.value + '" title="누르면 복사">' + fmt(x.value) + '</button>';
+      else v = esc(x.value);
+      return tr([td(esc(x.no || x.code), 'c'), td(esc(x.label)), td(v, 'n'), td('<span class="muted">' + esc(x.note) + '</span>')]);
+    }).join('') + '</tbody></table></div>';
+}
+// F-30 조정후 총수입금액명세서 (홈택스 입력 화면과 같은 번호)
+function adjRevenueTable(r) {
+  var s = (r.demoHx || E.hometaxInputs(r, last.settings, PARAMS)).screens.filter(function (x) { return x.id === 'adjrev'; })[0];
+  var ar = r.adjustedRevenue;
+  var status = ar.residual == null
+    ? '<p class="muted">부가세 신고서 값을 입력하면 12+13−14를 계산해 4번과 맞춰 봅니다. 입력 영역의 "부가가치세 신고서 값"을 여세요.</p>'
+    : '<p>12 + 13 − 14 = ' + fmt(ar.c16) + ' · 4번 총수입금액 ' + fmt(ar.c4) + ' → <span class="' + (ar.residual === 0 ? 'ok' : 'bad') + '">' +
+      (ar.residual === 0 ? '일치' : '차액 ' + fmt(ar.residual) + '원') + '</span></p>';
+  return '<p class="muted" style="margin-top:0">' + esc(s.menu) + '</p>' + rowsTable(s.rows) + status +
+    '<ul class="muted">' + s.notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+}
+// F-31 별지 제47호 소득금액조정합계표 (작성 자료. 원본 서식의 칸 배치는 확인하지 못함)
+function a47Table(r) {
+  var t = r.incomeAdjustment;
+  var head = '<p class="muted" style="margin-top:0">소득세법 시행규칙 별지 제47호서식 <b>소득금액조정합계표</b>에 옮겨 적을 값입니다. 자기조정으로 직접 신고하면서 세무조정이 있으면 이 서식을 PDF 부속서류로 첨부합니다.</p>' +
+    '<div class="notice">서식 원본의 칸 배치는 확인하지 못했습니다(과목, 과목코드, 금액 열만 확인). 아래는 값을 구역별로 정리한 작성 자료이며, 국세청 서식에 옮겨 적은 뒤 PDF로 제출하세요. 과목코드는 서식의 코드표를 보고 입력합니다.</div>';
+  if (!t.required) return head + '<p class="ok">세무조정 항목이 없어 제47호는 첨부하지 않아도 됩니다.</p>';
+  var body = t.sections.map(function (sec) {
+    var rows = sec.items.length ? sec.items.map(function (x) {
+      return tr([td(esc(x.subject)), td(esc(x.code) || '<span class="muted">-</span>', 'c'), td(esc(x.kind)), td(fmt(x.amount), 'n'), td('<span class="muted">' + esc(x.note) + '</span>')]);
+    }).join('') : tr(['<td colspan="5" class="muted">해당 없음</td>']);
+    return '<h2 style="margin:14px 0 6px;font-size:15px">' + esc(sec.title) + ' <span class="muted">(조정계산서 ' + (sec.cell === 11 ? '⑪' : '⑫') + ')</span></h2>' +
+      '<div class="scroll"><table><thead><tr><th>과목</th><th class="c">과목코드</th><th>구분</th><th class="n">금액</th><th>비고</th></tr></thead><tbody>' + rows +
+      tr([td('합계'), td(''), td(''), td(fmt(sec.total), 'n'), td('')], 'sum') + '</tbody></table></div>';
+  }).join('');
+  return head + body;
+}
+function hometaxTable(r) {
+  var h = r.demoHx || E.hometaxInputs(r, last.settings, PARAMS);
+  var out = '<p class="muted" style="margin-top:0">홈택스 › 종합소득세 › <b>일반신고서 [정기신고 작성]</b>에서 아래 순서대로 입력합니다. 파란 숫자를 누르면 쉼표 없는 숫자가 복사됩니다. “입력 필요”는 홈택스에서 확인한 값을 이 도구의 “기장세액공제” 칸에 넣으면 채워집니다.</p>';
+  h.screens.forEach(function (s, i) {
+    out += '<div class="hx"><h3>' + (i + 1) + '. ' + esc(s.title) + '</h3><div class="menu">' + esc(s.menu) + '</div>' +
+      '<div class="scroll"><table><thead><tr><th class="c">칸</th><th>항목</th><th class="n">입력값</th><th>메모</th></tr></thead><tbody>' +
+      s.rows.map(function (x) {
+        var v;
+        if (x.value === null) v = '<span class="bad">입력 필요</span>';
+        else if (typeof x.value === 'number') v = '<button type="button" class="valbtn" data-copy="' + x.value + '" title="누르면 복사">' + fmt(x.value) + '</button>';
+        else v = esc(x.value);
+        return tr([td(esc(x.no || x.code), 'c'), td(esc(x.label)), td(v, 'n'), td('<span class="muted">' + esc(x.note) + '</span>')]);
+      }).join('') + '</tbody></table></div>' +
+      (s.notes && s.notes.length ? '<ul>' + s.notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>' : '') + '</div>';
+  });
+  out += '<p class="muted" style="margin-top:16px">아직 도구가 만들어 주지 않는 화면: 조정후 총수입금액명세서, 표준합계잔액시산표(4열), 별지 제47호 소득금액조정합계표. 세액계산, 가산세, 기납부세액은 홈택스가 계산·표시하는 값을 확인하세요.</p>';
+  return out;
+}
+document.addEventListener('click', function (e) {
+  var go = e.target.closest && e.target.closest('[data-goto]');
+  if (go) { var tb = document.querySelector('#tabs [data-tab="' + go.getAttribute('data-goto') + '"]'); if (tb) { tb.click(); scrollToStep('s3'); } return; }
+  var gs = e.target.closest && e.target.closest('[data-goto-step]');
+  if (gs) { e.preventDefault(); scrollToStep(gs.getAttribute('data-goto-step')); return; }
+});
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var v = b.getAttribute('data-copy');
+  var done = function () { toast('복사했습니다'); b.classList.add('copied'); b.title = '복사됨'; setTimeout(function () { b.classList.remove('copied'); b.title = '누르면 복사'; }, 900); };
+  var fallback = function () {
+    var t = document.createElement('textarea'); t.value = v; document.body.appendChild(t); t.select();
+    try { document.execCommand('copy'); done(); } catch (err) { /* 복사 불가 환경 */ }
+    t.remove();
+  };
+  try { navigator.clipboard.writeText(v).then(done, fallback); } catch (err) { fallback(); }
+});
+function trialTable(r) {
+  var rows = r.trialBalance.rows.map(function (x) {
+    return tr([td(esc(x.name)), money(x.debit), money(x.credit), money(x.balance)]);
+  });
+  rows.push(tr([td('합계'), money(r.trialBalance.totalDebit), money(r.trialBalance.totalCredit), td('')], 'sum'));
+  return '<div class="scroll"><table><thead><tr><th>계정과목</th><th class="n">차변 합계</th><th class="n">대변 합계</th><th class="n">잔액(차변+)</th></tr></thead><tbody>' + rows.join('') + '</tbody></table></div>';
+}
+function journalTable(r) {
+  var rows = [];
+  r.journal.forEach(function (j) {
+    j.lines.forEach(function (l, i) {
+      rows.push(tr([
+        td(i === 0 ? esc(j.date) : ''), td(i === 0 ? esc(j.desc) : ''),
+        td(esc(E.ACCOUNTS[l.account].name)), money(l.debit), money(l.credit),
+      ]));
+    });
+  });
+  return '<div class="scroll"><table><thead><tr><th>일자</th><th>적요</th><th>계정</th><th class="n">차변</th><th class="n">대변</th></tr></thead><tbody>' + rows.join('') + '</tbody></table></div>';
+}
+function reconTable(r) {
+  var dr = r.deemedRent, dep = r.depreciation;
+  var diff = r.enteredDeemedRent - dr.included;
+  var rows = [
+    ['거래 시트 매출 합계 (간주임대료 행 포함)', fmt(r.sheet.revenue)],
+    ['거래 시트 비용 합계', fmt(r.sheet.expense)],
+    ['감가상각비 (계산, 개월 ' + dep.months + ')', fmt(dep.amount)],
+    ['필요경비 합계 (판관비 + 이자비용)', fmt(r.statements.income.necessaryExpense)],
+    ['간주임대료: 원본 입력', fmt(r.enteredDeemedRent)],
+    ['간주임대료: 재계산 (별지 제53호)', fmt(dr.included)],
+    ['&nbsp;&nbsp;보증금 적수', fmt(dr.depositAccum)],
+    ['&nbsp;&nbsp;건설비 상당액 / 적수', fmt(dr.costEquivalent) + ' / ' + fmt(dr.costAccum)],
+    ['&nbsp;&nbsp;보증금 잔액 × 이자율 ' + (dr.rate * 100).toFixed(2) + '%', fmt(dr.balance) + ' → ' + fmt(dr.grossEquivalent)],
+    ['사용한 간주임대료 (' + (last.settings.deemedRentMode === 'asEntered' ? '원본 값' : '재계산') + ')', fmt(r.deemedRentUsed)],
+    ['소득금액 (당기순이익 + 간주임대료)', r.locked ? '이용권 필요' : fmt(r.taxableIncome)],
+  ];
+  if (r.credit) {
+    rows.push(['기장세액공제 (한도 적용 전 ' + fmt(r.credit.uncapped) + ')', fmt(r.credit.amount) + (r.credit.capped ? ' (한도 적용)' : '')]);
+  }
+  var html = '<table><tbody>' + rows.map(function (x) { return tr([td(x[0]), td(x[1], 'n')]); }).join('') + '</tbody></table>';
+  if (diff !== 0) html += '<p class="msg warn"><b>대사 차이 ' + fmt(diff) + '원</b>원본 간주임대료와 재계산 값이 다릅니다. 건물 취득가·면적·보증금 입력을 확인하고, 신고 값은 세무사와 정하세요.</p>';
+  return html;
+}
+function warningsHtml(r) {
+  var groups = {};
+  r.warnings.forEach(function (w) {
+    var k = w.level + '|' + w.code + '|' + w.msg;
+    if (!groups[k]) groups[k] = { w: w, rows: [] };
+    if (w.row) groups[k].rows.push(w.row);
+  });
+  var order = { error: 0, warn: 1, info: 2 };
+  var list = Object.keys(groups).map(function (k) { return groups[k]; })
+    .sort(function (a, b) { return order[a.w.level] - order[b.w.level]; });
+  if (!list.length) return '<p class="ok">확인할 항목이 없습니다 ✓</p>';
+  return list.map(function (g) {
+    var rows = g.rows.length ? ' <span class="muted">(행 ' + g.rows.slice(0, 8).join(', ') + (g.rows.length > 8 ? ' 외 ' + (g.rows.length - 8) + '건' : '') + ')</span>' : '';
+    var label = { error: '오류', warn: '확인 필요', info: '참고' }[g.w.level];
+    return '<div class="msg ' + g.w.level + '"><span class="lv">' + label + '</span><span>' + esc(g.w.msg) + rows + '<span class="code">' + esc(g.w.code) + '</span></span></div>';
+  }).join('');
+}
+function summaryHtml(r) {
+  var st = r.statements;
+  var assumed = pendingRequired();
+  var cards = [
+    ['매출 (임대수입)', fmt(st.income.revenue)],
+    ['필요경비 합계', fmt(st.income.necessaryExpense)],
+    ['당기순이익', fmt(st.income.netIncome)],
+    ['소득금액 (간주임대료 반영)', r.locked ? '이용권 필요' : fmt(r.taxableIncome)],
+    ['감가상각비 (계산)', fmt(r.depreciation.amount)],
+    ['기장세액공제', r.locked ? '이용권 필요' : (r.credit ? fmt(r.credit.amount) : '입력 필요')],
+  ];
+  var next = assumed
+    ? '<div class="next"><div><b>먼저 임시값을 실제 값으로 바꿔 보세요</b><span>꼭 입력할 값 ' + assumed + '개가 임시값입니다. 재무상태표, 감가상각비, 간주임대료가 이 값에 따라 달라집니다.</span></div><button type="button" class="primary" data-goto-step="s2">2단계로 이동</button></div>'
+    : '<div class="next"><div><b>이제 홈택스에 입력할 차례입니다</b><span>"홈택스 입력값" 탭의 값을 화면 순서대로 입력하세요. 값을 누르면 복사됩니다.</span></div><button type="button" class="primary" data-goto="hx">홈택스 입력값 보기</button></div>';
+  return next + '<div class="cards">' + cards.map(function (c) {
+      var empty = c[1] === '입력 필요';
+      return '<div class="stat' + (empty ? ' empty' : '') + '"><div class="k">' + c[0] + '</div><div class="v">' + c[1] + '</div></div>';
+    }).join('') + '</div>' +
+    '<h3 class="sechead">확인할 항목</h3>' + warningsHtml(r);
+}
+
+var TABS = [
+  { id: 'sum', label: '요약', title: '요약·확인', html: summaryHtml },
+  { id: 'hx', label: '홈택스 입력', title: '홈택스 입력값', html: hometaxTable },
+  { id: 'bs', label: '재무상태표', title: '표준재무상태표', html: balanceTable },
+  { id: 'is', label: '손익계산서', title: '표준손익계산서', html: incomeTable },
+  { id: 'adj', label: '조정계산서', html: adjustmentTable },
+  { id: 'adjrev', label: '수입금액명세서', title: '조정후 총수입금액명세서', html: adjRevenueTable },
+  { id: 'a47', label: '조정합계표', title: '소득금액조정합계표(별지 제47호)', html: a47Table },
+  { id: 'tb', label: '시산표', title: '합계잔액시산표', html: trialTable },
+  { id: 'jr', label: '분개장', html: journalTable },
+  { id: 'rc', label: '대사', title: '대사·계산근거', html: reconTable },
+];
+var activeTab = 'sum';
+function render(L) {
+  var r = L.res;
+  $('#resultEmpty').classList.add('hidden'); $('#result').classList.remove('hidden');
+  $('#tabs').innerHTML = TABS.map(function (t) {
+    return '<button type="button" role="tab" class="' + (isTabLocked(t.id) ? 'locked' : '') + '" data-tab="' + t.id + '" title="' + esc(t.title || t.label) + '" aria-selected="' + (t.id === activeTab) + '">' + t.label + '</button>';
+  }).join('');
+  $('#panels').innerHTML = TABS.map(function (t) {
+    return '<div class="panel' + (t.id === activeTab ? '' : ' hidden') + '" data-panel="' + t.id + '"><h2 class="printonly">' + (t.title || t.label) + '</h2>' + (isTabLocked(t.id) ? lockPanelHtml(t) : t.html(r)) + '</div>';
+  }).join('');
+  var meta = $('#resultMeta');
+  if (meta) meta.textContent = L.site + ' · ' + L.settings.year + '년 귀속 · ' + (pendingRequired() ? '임시값 ' + pendingRequired() + '개 포함' : '입력값 확인 완료') + (EDITION === 'public' && license.email ? ' · 이용권 ' + license.email : '');
+  $('#printMeta').textContent = '사업장: ' + L.site + ' · 과세기간 ' + L.settings.year + '.01.01~' + L.settings.year + '.12.31 · 단위: 원 · 가정값 포함, 세무사 검수 필요';
+}
+$('#tabs').addEventListener('click', function (e) {
+  var id = e.target.getAttribute && e.target.getAttribute('data-tab');
+  if (!id) return;
+  activeTab = id;
+  $$('#tabs button').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === id)); });
+  $$('#panels .panel').forEach(function (p) { p.classList.toggle('hidden', p.getAttribute('data-panel') !== id); });
+});
+window.addEventListener('beforeprint', function () { $$('#panels .panel').forEach(function (p) { p.classList.remove('hidden'); }); });
+window.addEventListener('afterprint', function () { $$('#panels .panel').forEach(function (p) { p.classList.toggle('hidden', p.getAttribute('data-panel') !== activeTab); }); });
+$('#btnPrint').addEventListener('click', function () { window.print(); });
+
+// ── 내보내기·저장 ──
+function download(name, text, type) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: type }));
+  a.download = name; document.body.appendChild(a); a.click(); toast('파일을 저장했습니다');
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+$('#btnJournalCsv').addEventListener('click', function () {
+  if (!last) return;
+  var out = ['일자,적요,계정,차변,대변'];
+  last.res.journal.forEach(function (j) {
+    j.lines.forEach(function (l) {
+      out.push([j.date, '"' + j.desc.replace(/"/g, '""') + '"', E.ACCOUNTS[l.account].name, l.debit, l.credit].join(','));
+    });
+  });
+  download('분개장.csv', '﻿' + out.join('\r\n'), 'text/csv;charset=utf-8');
+});
+$('#btnSave').addEventListener('click', function () {
+  var s = readForm(); delete s.assumptions;
+  s.assumedFields = $$('#s2 .in.assumed, #s2b .in.assumed').map(function (el) { return el.getAttribute('data-k'); });
+  download('변환도구-입력값.json', JSON.stringify(s, null, 2), 'application/json');
+});
+$('#loadJson').addEventListener('change', function (e) {
+  var f = e.target.files[0]; if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function () {
+    try {
+      var s = JSON.parse(rd.result);
+      s.assumptions = DEFAULTS.assumptions;
+      fillForm(s, false);
+      (s.assumedFields || []).forEach(function (k) { var el = $('.in[data-k="' + k + '"]'); if (el) el.classList.add('assumed'); });
+      restrictAssumed(); updateAssumeCount();
+      baseOpt = readForm();
+      if (applied.s1) {
+        // 저장해 둔 입력을 불러오면 2·3단계를 함께 반영한 것으로 본다
+        snapReq = readForm(); snapOpt = readForm();
+        applied.s2 = true; applied.s3 = true; dirty = { s1: dirty.s1, s2: false, s3: false };
+        $('#msg2').textContent = '저장한 입력을 불러와 반영했습니다.'; $('#msg3').textContent = '저장한 입력을 불러와 반영했습니다.';
+        run();
+        showView(4);
+      }
+      updateSteps();
+    } catch (err) { showError('입력값 파일을 읽지 못했습니다: ' + err.message); }
+  };
+  rd.readAsText(f);
+});
+
+initMoneyFmt();
+fillForm(DEFAULTS, true);
+resetSteps();
+// 테스트·디버깅용
+window.__app = {
+  run: run, state: function () { return last; },
+  steps: function () { return { applied: applied, dirty: dirty }; },
+  apply: function (n) { return [null, apply1, apply2, apply3][n](); },
+  loadCsvText: function (t, name) { var txs = E.parseLedgerCsv(t, { site: name || 'csv' }); setSources(sourcesFromTxs(txs, name || 'csv'), name + ': 거래 ' + txs.length + '건'); resetSteps(); },
+};
+})();
+</script>
+</body>
+</html>

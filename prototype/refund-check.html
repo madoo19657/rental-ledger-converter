@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이월결손금 환급 점검 | 장부선생</title>
+<!--
+  장부선생 환급 점검 웹 페이지 시안 (단일 파일, 서버 없음).
+  UX Pilot 시안(0~8단계)을 반영하고 docs/PRD-refund-check.md 규칙에 맞춰 고쳤다.
+  계산부는 src/refund-check.js의 복사본이다(프로토타입용). 규칙 값은 config/loss-carryover-rules.json과 같고 확인 전 값이다.
+  입력값은 브라우저 안에서만 쓰며 서버로 보내지 않는다. 체험 값은 가상이다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafb; --card:#fff; --ink:#111827; --sub:#5b6472; --line:#e3e7ec;
+  --brand:#0f9488; --brand-d:#0b756b; --brand-bg:#e7f6f4; --navy:#14213d;
+  --warn:#92400e; --warn-bg:#fff8e1; --warn-line:#f2dd9a; --err:#c0392b; --err-bg:#fdecea;
+  --info-bg:#eef3fb; --radius:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Inter","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+button,input,select{font:inherit;color:inherit}
+header.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.bar{height:3px;background:var(--line)}
+.bar i{display:block;height:100%;background:var(--brand);width:0;transition:width .25s}
+.top-in{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:60px;padding:0 20px;gap:12px}
+.hl{display:flex;align-items:center;gap:8px}.hr{display:flex;justify-content:flex-end}
+.hback{width:36px;height:36px;border:0;background:none;border-radius:10px;cursor:pointer;display:grid;place-items:center;color:var(--sub)}
+.hback:hover{background:#f1f4f6;color:var(--ink)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--navy)}
+.brand img,.logo{height:34px;width:auto;display:block}
+.step{text-align:center;font-size:14px;color:var(--sub);font-weight:600;line-height:1.25}
+.step small{display:block;font-size:12px;font-weight:500}.step b{color:#64748b;font-weight:700;font-size:15px}.step b.dk{color:var(--navy)}.step small{color:#8a97a8}
+.hbtn{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:14px;display:inline-flex;gap:8px;align-items:center}
+.hbtn:hover{background:var(--brand-d)}
+.sec{display:flex;align-items:center;gap:10px;font-size:18px;margin:26px 0 12px;color:var(--navy)}
+.sec::before{content:"";width:6px;height:22px;border-radius:3px;background:var(--brand)}
+.linkrow{display:flex;gap:24px;justify-content:center;margin-top:26px;border-top:1px solid var(--line);padding-top:22px}
+.report-head .logo{margin-left:auto}
+.brand-sub{font-size:11px;color:var(--sub);font-weight:500;text-align:right}
+main{flex:1;width:100%;max-width:600px;margin:0 auto;padding:32px 16px 40px;transition:max-width .2s}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(16,24,40,.08),0 8px 24px rgba(16,24,40,.04);padding:36px 40px}
+h1{font-size:24px;line-height:1.35;margin:0 0 8px;color:var(--navy)}
+h1 .ic{display:inline-grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#eafaf6;margin-right:12px;vertical-align:middle;font-size:20px}
+.lead{color:var(--sub);margin:0 0 20px}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px 18px;font-weight:700;cursor:pointer;text-align:center;font-size:17px}
+.btn.primary{background:var(--brand);color:#fff}
+.btn.primary:hover:not(:disabled){background:var(--brand-d)}
+.btn.primary:disabled{background:#b6c4c2;cursor:not-allowed}
+.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink);margin-top:10px}
+.btn.ghost:hover{background:#f7f9fa}
+.row-btn{display:flex;gap:10px;margin-top:22px}.row-btn .btn{margin:0}
+.link{background:none;border:0;color:var(--brand-d);text-decoration:underline;cursor:pointer;padding:6px 0;font-size:15px}
+.box{border-radius:12px;padding:14px 16px;margin:16px 0;font-size:15px}
+.box.info{background:var(--info-bg)}.box.warn{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn)}
+.box.priv{background:#f1f5f9;color:#334155;font-size:14px}
+.box b{color:inherit}
+.principle{background:#fafbfc;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:16px 0}
+.principle h2{font-size:15px;text-align:center;margin:0 0 12px;color:var(--navy)}
+.pstep{display:flex;gap:12px;align-items:center;margin:10px 0}
+.pstep .dot{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800}
+.pstep small{display:block;color:var(--sub)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.two>div{border-radius:12px;padding:14px;font-size:14px}
+.two ul{margin:6px 0 0;padding-left:18px}.two h3{margin:0;font-size:15px}
+.do{background:#e9f8ef;border:1px solid #bfe8cf}.dont{background:#f5f6f8;border:1px solid var(--line)}
+.field{margin:20px 0}
+.field label,.field .lbl{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;margin-bottom:6px}
+.field .opt{font-weight:400;color:var(--sub);font-size:13px;margin-left:4px}
+.input{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;background:#fafbfc;padding:0 14px}
+.input:focus-within{border-color:var(--brand);background:#fff}
+.input input{flex:1;border:0;background:none;padding:14px 0;text-align:right;font-size:18px;outline:0;min-width:0}
+.input span{color:var(--sub);margin-left:8px}
+.input.ro{background:#f0f2f4}
+.hint{font-size:13px;color:var(--sub);min-height:20px;margin-top:4px}.hint.neg{color:var(--err)}
+details.help{margin-top:6px}
+details.help summary{cursor:pointer;color:var(--brand-d);font-size:14px;font-weight:600;list-style:none}
+details.help summary::-webkit-details-marker{display:none}
+details.help[open] summary{margin-bottom:8px}
+h1:focus{outline:none}
+.where{background:none;border:0;color:var(--brand-d);font-size:13px;font-weight:700;text-decoration:underline;cursor:pointer;padding:0}
+.field.sep{padding-bottom:14px;border-bottom:1px solid var(--line)}.field.sep:last-of-type{border-bottom:0}
+.field .lbl{align-items:center}
+.demo-chip{font-size:12px;background:#eaf2ff;color:#1d3a6e;border-radius:999px;padding:3px 10px;font-weight:700}
+table.t.conf th,table.t.conf td{padding:14px 8px}table.t.conf th{font-size:13px;border-bottom:1px solid var(--line)}
+table.t.conf td:first-child{font-weight:800}table.t.conf .ed{width:40px;text-align:center;padding:0}
+.edit{border:0;background:none;color:var(--sub);cursor:pointer;padding:6px;border-radius:8px}.edit:hover{background:#f1f4f6;color:var(--ink)}
+.conf-warn{display:flex;gap:12px;align-items:flex-start;font-size:13.5px}.conf-warn svg{flex:none;margin-top:2px}.conf-warn b{color:#7c2d12}
+table.t.res th{font-size:12.5px;padding:12px 8px;white-space:nowrap}table.t.res td{padding:14px 8px;font-size:13.5px}
+table.t.res th.dh{color:#d97706}table.t.res td.b{font-weight:800;color:#111}table.t.res td.neg.b{color:var(--err)}
+table.t.res td.faint{color:#8a94a0}table.t.res tr.warnrow td{background:#fffaeb}
+table.t.res td.diff{color:#d97706;font-weight:800}
+.unit{text-align:right;font-size:11.5px;color:var(--sub);margin:4px 0 22px}
+.cause{background:#fffaeb;border:1px solid #f6e3a6;border-radius:14px;padding:20px 22px;margin:6px 0 22px;color:#7c2d12}
+.cause .ct{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;margin-bottom:8px}
+.cause p{margin:0 0 14px;font-size:14.5px}.cause p b{font-weight:800}
+.cause .cbox{background:#fffdf5;border-radius:10px;padding:12px 16px;font-size:13px}
+.cause .cbox div{display:flex;justify-content:space-between;padding:2px 0}.cause .cbox .tot{border-top:1px solid #f1e3b0;margin-top:4px;padding-top:6px;font-weight:800}
+.cause small{display:block;margin-top:10px;color:#92400e}
+.ic.dark{background:var(--navy)}
+.sbox{background:#f8fafb;border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:18px 0}
+.sbox .st,.caution .st{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;margin-bottom:12px;color:var(--navy)}
+.sbox ul.dots{list-style:none;padding:0;margin:0;font-size:13.5px}.sbox ul.dots li{position:relative;padding-left:16px;margin:8px 0}
+.sbox ul.dots li::before{content:"";position:absolute;left:2px;top:.65em;width:4px;height:4px;border-radius:50%;background:var(--brand)}
+.sbox .sm{font-size:12.5px;color:var(--sub);margin:8px 0 0}
+.quote{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-style:italic;font-size:13.5px;color:#374151}
+.caution{background:#fffaeb;border:1px solid #f6e3a6;border-radius:14px;padding:20px 22px;margin:18px 0 22px;color:#7c2d12}
+.caution .st{color:#92400e;margin-bottom:8px}.caution p{margin:0;font-size:12.5px}
+.rcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:10px 0}
+.rcard b{display:block;font-size:15px;margin-bottom:4px;color:var(--navy)}.rcard p{margin:0;font-size:13px;color:var(--sub)}
+.rcard.warn{background:#fffaeb;border-color:#f6e3a6}.rcard.warn b{color:#92400e}.rcard.warn p{color:#b45309}
+table.t.grid{border:1px solid var(--line);font-size:13px}table.t.grid th{background:#eef2f6;color:var(--ink);font-weight:600;border:1px solid var(--line);padding:9px 10px}
+table.t.grid td{border:1px solid var(--line);padding:9px 10px}table.t.grid td.ct,table.t.grid th.ct{text-align:center}
+table.t.grid tr.wrow td{background:#fffaeb}table.t.grid .wred{color:var(--err);font-weight:800}table.t.grid .wst{color:#d97706;font-style:italic}
+.note-i{font-size:11px;color:var(--sub);font-style:italic;margin:8px 0 0}
+.rfoot{border-top:1px solid var(--line);margin-top:44px;padding-top:26px;text-align:center}.rfoot p{margin:0;font-size:11.5px;color:var(--sub);max-width:520px;margin-inline:auto}
+.tagbtn{border:0;cursor:pointer;font-family:inherit}.tagbtn:hover{background:#d5dbe2}
+dialog.rule{border:0;border-radius:18px;padding:0;max-width:560px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(16,24,40,.25);color:var(--ink)}
+dialog.rule::backdrop{background:rgba(15,23,42,.45)}
+.rule .rh{display:flex;justify-content:space-between;align-items:center;padding:20px 24px 0}
+.rule .rh h2{margin:0;font-size:19px;color:var(--navy)}
+.rule .x{border:0;background:none;font-size:24px;line-height:1;cursor:pointer;color:var(--sub);padding:4px 8px;border-radius:8px}
+.rule .rb{padding:12px 24px 24px;font-size:14px}
+.rule table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+.rule th{background:#eef2f6;text-align:left;padding:8px 10px;border:1px solid var(--line)}.rule td{padding:8px 10px;border:1px solid var(--line);vertical-align:top}
+.rule .st{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11.5px;font-weight:700}
+.rule .ok{background:#e0f5ee;color:#0b6b5e}.rule .pend{background:#fff3c4;color:#8a5a00}
+.rule ul{padding-left:18px;margin:6px 0}.rule li{margin:5px 0}
+.rule .src{font-size:12px;color:var(--sub);margin-top:12px}
+.lead-box{margin-top:20px;padding:16px 18px;border-radius:12px;background:#eef8f6;border:1px solid #cfeae5;font-size:16px;line-height:1.7}
+.lead-box.w{background:#fffaeb;border-color:#f6e3a6;color:#7c2d12}
+table.t.easy th{white-space:normal;line-height:1.35;vertical-align:bottom}table.t.easy td{padding:14px 8px;font-size:14px}
+.rc2{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.rc2.w{background:#fff3c4;color:#8a5a00}.rc2.g{background:#e0f5ee;color:#0b6b5e}.rc2.n{background:#eceff3;color:#5b6472}
+details.more{margin:18px 0 6px;border:1px solid var(--line);border-radius:12px;padding:12px 16px;background:#fafbfc}
+details.more summary{cursor:pointer;font-weight:700;color:var(--navy);font-size:14px}
+table.t.detail{font-size:12.5px;margin-top:10px}table.t.detail th{white-space:nowrap}
+.lrow{display:flex;align-items:center;gap:10px;margin-top:6px}.lrow label{font-weight:700;font-size:14px}.lrow select{width:auto;padding:8px 12px;font-size:15px}
+table.t.ledger{font-size:14.5px}table.t.ledger th{font-size:14px;color:var(--ink);font-weight:700;padding:12px 10px;white-space:nowrap}
+table.t.ledger td{padding:14px 10px}table.t.ledger tr.tot td{font-weight:800;background:#f6f8fa}
+table.t.ledger td.cur{font-weight:800;color:var(--brand-d)}small.lost{color:var(--err);font-weight:600}
+.remain-row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#eef8f6;border:1px solid #cfeae5;border-radius:12px;padding:14px 16px;margin:0 0 14px}
+.remain-row span{font-weight:700;color:var(--navy)}.remain-row small{display:block;font-weight:400;color:var(--sub);font-size:12px}
+.remain-row b{font-size:20px;color:var(--brand-d)}.remain-row em{font-style:normal;font-size:13px;color:var(--warn)}
+.bignum{background:#eef8f6;border:1px solid #cfeae5;border-radius:14px;padding:18px 20px;margin:10px 0 12px}
+.bignum small{display:block;color:var(--sub);font-size:13px}.bignum b{display:block;font-size:30px;color:var(--brand-d);line-height:1.3;margin:2px 0}.bignum span{color:var(--sub);font-size:14px}
+.optcard{border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0;background:#fff}.optcard.sel{border-color:var(--brand);background:#f4fbf9}
+.optcard .oh{font-weight:800;font-size:15.5px;color:var(--navy);display:flex;gap:8px;align-items:center;flex-wrap:wrap}.optcard p{margin:8px 0 4px;font-size:14px}
+.dim{color:var(--sub)}small.dim{display:block;font-size:12.5px}
+.copybtn{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--navy)}.copybtn:hover{background:#f1f4f6}
+.logo-wrap .brand{display:block}.logo-wrap img{height:40px;width:auto}
+table.t.cand{font-size:13.5px}table.t.cand th{white-space:nowrap;font-size:12.5px}table.t.cand td{padding:10px 8px}table.t.cand td:nth-child(2){font-weight:800;color:var(--navy)}table.t.cand td.mx{color:var(--sub);font-weight:600}table.t.cand td.ck{white-space:nowrap;text-align:left}table.t.cand th:first-child{text-align:left}
+table.t.cand td.ck input{width:20px;height:20px;accent-color:var(--brand)}table.t.cand td.cur{font-weight:800;color:var(--brand-d)}
+table.t.cand td.cd{white-space:nowrap}table.t.cand td.cd small{display:block;color:var(--sub);font-size:11px;margin-top:2px}
+.sumline{margin:12px 0 4px;padding:12px 14px;background:#f4fbf9;border:1px solid #cfeae5;border-radius:10px;font-size:14px}
+.rowbtn{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}.rowbtn:hover:not(:disabled){background:var(--brand-d)}.rowbtn:disabled{background:#d5dbe2;color:#6b7684;cursor:not-allowed}
+.amtbox{display:flex;align-items:center;gap:4px;justify-content:flex-end}.amt{width:108px;border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;text-align:right;font:inherit;font-weight:800;color:var(--brand-d);background:#fff}.amt:focus{outline:0;border-color:var(--brand)}
+table.t.cand td.cur small{display:block;color:var(--sub);font-size:11px;text-align:right;margin-top:2px}.bad{color:var(--err)}
+.rowcard{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;background:#fff}
+.rowcard .rt{font-weight:800;color:var(--navy);margin-bottom:6px}.rowcard .rt small{font-weight:500;color:var(--sub);margin-left:6px}
+table.kv{width:100%;border-collapse:collapse;font-size:13.5px}table.kv th{width:38%;text-align:left;color:var(--sub);font-weight:600;padding:7px 6px 7px 0;vertical-align:top}table.kv td{padding:6px 0;border-top:1px solid #f0f2f4}table.kv tr:first-child td,table.kv tr:first-child th{border-top:0}
+.vchip{display:inline-flex;align-items:center;gap:8px;border:1px solid #cfeae5;background:#f4fbf9;color:var(--brand-d);border-radius:8px;padding:4px 10px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}.vchip:hover{background:#e3f5f1}.vchip i{font-style:normal;font-weight:600;font-size:11px;color:var(--sub)}
+.donechk{margin-top:14px}
+.hxbar{display:flex;flex-direction:column;gap:2px;margin:4px 0 10px}.hxbar span{font-size:12.5px;color:var(--sub);font-weight:600}.hxbar b{font-size:18px;color:var(--navy)}
+.hxdots{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.hxd{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:#fff;font-size:12.5px;font-weight:700;color:var(--sub);cursor:pointer;font-family:inherit}
+.hxd.done{background:var(--brand-bg);border-color:#b7e1dc;color:var(--brand-d)}.hxd.cur{background:var(--navy);border-color:var(--navy);color:#fff}
+.hxbody{background:#fafbfc;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.st2{font-weight:800;color:var(--navy);font-size:15px;margin:0 0 6px}
+.crumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0 10px;font-size:13px}.crumb span{background:#eef2f6;border-radius:6px;padding:3px 8px;font-weight:700;color:var(--navy)}.crumb span.last{background:var(--brand-bg);color:var(--brand-d)}.crumb i{font-style:normal;color:var(--sub)}
+.eyebrow{display:inline-block;background:var(--brand-bg);color:var(--brand-d);border-radius:999px;padding:3px 12px;font-size:12.5px;font-weight:700;margin-bottom:10px}
+.fi-t{font-size:12px;font-weight:700;background:#e9edf1;padding:6px 10px}.fi-s{overflow-x:auto}
+table.fi{border-collapse:collapse;width:100%;min-width:520px;font-size:11px;background:#fff}table.fi th,table.fi td{border:1px solid #cfd6dd;padding:5px 6px;text-align:center;font-weight:500;vertical-align:middle}
+table.fi thead th{background:#f1f4f7;font-weight:700;color:#3a4654}table.fi th.grp{text-align:left;background:#fafbfc;font-weight:600;min-width:120px}table.fi th.grp.on{background:#fff8dc}
+table.fi td.gry{background:#9aa3ad}table.fi td.hl{background:#fff3c4;outline:2px solid #f0b429;outline-offset:-2px;font-weight:800}table.fi td.hl2{background:#fff}
+.mock-card{border:1px solid #cfe3df;background:#f1faf8;border-radius:12px;overflow:hidden;margin:6px 0 10px}
+.mock-card .mc-t{padding:9px 14px;font-weight:700;color:#0b756b;font-size:14px;display:flex;justify-content:space-between}.mock-card .mc-t i{font-style:normal;font-size:12px}
+.mock-card .mc-b{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 12px;background:#fff}
+.mock-card .mc-b span{flex:1 1 90px;border:1px solid #9fcfc8;border-radius:8px;padding:8px 6px;font-size:12.5px;text-align:center;color:#0b756b;background:#fff;line-height:1.3}
+.mock-card .mc-b span.on{background:#fff3c4;border-color:#f0b429;border-width:2px;font-weight:800;color:#3b2a00}
+.mock-card .mc-b span em{display:block;font-style:normal;font-size:10.5px;font-weight:700;color:#8a5a00;margin-top:2px}
+.mock-pop{max-width:300px;margin:6px 0 10px;border:1px solid #cfd6dd;border-radius:14px;background:#fff;box-shadow:0 6px 20px rgba(16,24,40,.12);overflow:hidden}
+.mock-pop .mp-h{display:flex;justify-content:space-between;padding:12px 14px 6px;font-weight:800;font-size:15px}.mock-pop .mp-h i{font-style:normal;color:#6b7684}
+.mock-pop .mp-b{margin:6px 14px;background:#f3f6f8;border-radius:10px;padding:12px;text-align:center;font-size:12.5px}.mock-pop .mp-b p{margin:0 0 8px}
+.mock-pop .mp-sel{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#fff;border:2px solid #f0b429;border-radius:6px;padding:6px 10px;font-size:13px;background:#fff8dc}.mock-pop .mp-sel i{font-style:normal;color:#6b7684}.mock-pop .mp-sel em{font-style:normal;font-size:10.5px;font-weight:700;color:#8a5a00}
+.mock-pop .mp-btn{margin:8px 14px 14px;background:#4d8a99;color:#fff;border-radius:8px;padding:9px;text-align:center;font-weight:800;font-size:13px;outline:2px solid #f0b429}.mock-pop .mp-btn em{display:block;font-style:normal;font-size:10.5px;font-weight:700;color:#fff3c4}
+.mock-top{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;margin:6px 0 10px}
+.mock-top span{border:1px solid #9fb4bf;border-radius:6px;padding:6px 10px;font-size:11.5px;color:#4a6572;background:#fff;line-height:1.3}
+.mock-top span.on{background:#3d52c4;color:#fff;border-color:#3d52c4;font-weight:800;outline:2px solid #f0b429;outline-offset:1px}.mock-top span.on em{display:block;font-style:normal;font-size:10px;font-weight:700;color:#fff3c4}
+.help-body{background:#f8fafb;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px}
+.form-ill{border:1px solid #b8c2cc;background:#fff;border-radius:6px;font-size:12.5px;margin:10px 0;overflow:hidden}
+.form-ill .ft{background:#e9edf1;padding:6px 10px;font-weight:700;display:flex;justify-content:space-between}
+.form-ill .fr{display:grid;grid-template-columns:34px 1fr 90px;border-top:1px solid #d6dce2}
+.form-ill .fr>*{padding:6px 8px}.form-ill .fr .n{text-align:center;color:var(--sub);border-right:1px solid #d6dce2}
+.form-ill .fr .v{text-align:right;border-left:1px solid #d6dce2;color:#7b8794}
+.form-ill .on{background:#fff3c4;outline:2px solid #f0b429;outline-offset:-2px;font-weight:700}
+.form-ill .on .v{color:#111}
+.form-ill .off{color:#8a94a0}
+.tag{display:inline-block;font-size:11.5px;border-radius:6px;padding:1px 7px;margin-left:6px;font-weight:700}
+.tag.here{background:#f0b429;color:#3b2a00}.tag.no{background:#e3e7ec;color:#5b6472}
+.fake-note{font-size:12px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 12px;font-size:13px;cursor:default}
+.chip.cur{background:var(--navy);color:#fff;border-color:var(--navy)}
+.chip.done{background:var(--brand-bg);border-color:#b7e1dc;color:var(--brand-d);cursor:pointer}
+.chip.gap{background:#fff8e1;border-color:var(--warn-line);color:var(--warn);cursor:pointer}
+.mini{font-size:13px;color:var(--sub);margin-bottom:6px;font-weight:600}
+ol.steps{list-style:none;padding:0;margin:18px 0}
+ol.steps li{display:flex;gap:12px;margin:12px 0;align-items:flex-start}
+ol.steps .no{flex:none;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700}
+ol.steps small{display:block;color:var(--sub)}
+.check{background:#f8fafb;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:16px 0}
+.check label{display:flex;gap:10px;padding:8px 0;cursor:pointer;align-items:flex-start}
+.check input{width:22px;height:22px;accent-color:var(--brand);flex:none;margin-top:2px}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{color:var(--sub);font-weight:600;text-align:right;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t td{text-align:right;padding:10px 6px;border-bottom:1px solid #f0f2f4;font-variant-numeric:tabular-nums}
+table.t th:first-child,table.t td:first-child{text-align:left;font-weight:700}
+table.t tr.warnrow{background:var(--warn-bg)}table.t tr.unk td{color:#8a94a0}
+.neg{color:var(--err)}.diff{color:var(--warn);font-weight:700}
+.badge{display:inline-block;border-radius:999px;padding:5px 14px;font-weight:700;font-size:14px}
+.badge.w{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.badge.g{background:var(--brand-bg);color:var(--brand-d)}
+.res-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.tablewrap{overflow-x:auto;margin:14px -4px}
+table.t td:first-child{white-space:nowrap}
+.flagtag{display:block;width:max-content;margin:2px 0 0!important;background:#f0b429;color:#3b2a00;border-radius:6px;font-size:11.5px;padding:0 6px;margin-left:6px;font-weight:700}
+.qopt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0;cursor:pointer;font-weight:700}
+.qopt:hover{border-color:var(--brand)}
+.qopt .r{width:20px;height:20px;border-radius:50%;border:2px solid #b8c2cc;flex:none}
+.qopt.sel{border-color:var(--brand);background:var(--brand-bg)}.qopt.sel .r{border-color:var(--brand);background:radial-gradient(var(--brand) 45%,#fff 50%)}
+.qicon{width:64px;height:64px;border-radius:50%;background:var(--brand-bg);display:grid;place-items:center;font-size:30px;margin:0 auto 14px;color:var(--brand-d);font-weight:800}
+.center{text-align:center}
+.qh{font-size:21px;text-align:center;margin:0 0 6px;color:var(--navy)}
+.qsub{text-align:center;color:var(--sub);margin:0 0 14px}
+ul.plain{padding-left:20px;margin:6px 0}
+.report-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--navy);padding-bottom:14px;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.report-head h1{margin:0}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.kpi{background:#f6f8fa;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi small{color:var(--sub);display:block}.kpi b{font-size:18px}
+.demo-banner{background:#eaf2ff;border:1px solid #c6dafc;color:#1d3a6e;border-radius:12px;padding:8px 14px;font-size:14px;margin-bottom:14px}
+footer.disc{width:100%;background:var(--card);border-top:1px solid var(--line);padding:14px 16px;font-size:12px;color:var(--sub);text-align:center;line-height:1.6}
+footer.disc a{color:var(--sub)}
+footer.disc .copy{margin-top:2px}
+.sr{position:absolute;left:-9999px}
+select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:13px 12px;font-size:18px;background:#fafbfc;font-weight:700}
+.sel2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){
+  .card{padding:24px 18px}
+  .top-in{padding:0 10px}
+  .two,.kpis{grid-template-columns:1fr}
+  table.t.stack thead{display:none}
+  table.t.stack tr{display:block;border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:6px 10px}
+  table.t.stack tr.warnrow{border-color:var(--warn-line)}
+  table.t.stack td{display:flex;justify-content:space-between;text-align:right;border:0;padding:4px 0}
+  table.t.stack td:first-child{font-size:16px}
+  table.t.stack td[data-l]::before{content:attr(data-l);color:var(--sub);font-weight:400;text-align:left;margin-right:12px}
+}
+@media print{
+  body{background:#fff}header.top,.noprint,footer.disc .nopr{display:none!important}
+  .card{box-shadow:none;padding:0}main{padding:0;max-width:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar"><i id="barFill"></i></div>
+  <div class="top-in">
+    <div class="hl"><button type="button" class="hback" id="hBack" aria-label="이전 단계"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="brand" id="hBrand"><img class="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1ODAgMjA0IiB3aWR0aD0iNTgwIiBoZWlnaHQ9IjIwNCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSLsnqXrtoDshKDsg50iPjx0aXRsZT7snqXrtoDshKDsg508L3RpdGxlPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMikgc2NhbGUoMS4wKSIgc3Ryb2tlPSIjMTUxNTFBIiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PHJlY3QgeD0iMzQiIHk9IjQ2IiB3aWR0aD0iMTQ4IiBoZWlnaHQ9IjEzMiIgcng9IjI0IiBmaWxsPSIjMTUxNTFBIiBzdHJva2U9Im5vbmUiLz48cmVjdCB4PSIyNCIgeT0iMzYiIHdpZHRoPSIxNDgiIGhlaWdodD0iMTMyIiByeD0iMjQiIGZpbGw9IiNGRkQyM0YiLz48Y2xpcFBhdGggaWQ9ImJrMDIiPjxyZWN0IHg9IjI0IiB5PSIzNiIgd2lkdGg9IjE0OCIgaGVpZ2h0PSIxMzIiIHJ4PSIyNCIvPjwvY2xpcFBhdGg+PGcgY2xpcC1wYXRoPSJ1cmwoI2JrMDIpIj48cmVjdCB4PSIyMSIgeT0iMzMiIHdpZHRoPSIzMiIgaGVpZ2h0PSIxMzgiIGZpbGw9IiMzQjVCRkYiIHN0cm9rZT0ibm9uZSIvPjxwYXRoIGQ9Ik01MiAzNlYxNjgiIGZpbGw9Im5vbmUiLz48L2c+PGNpcmNsZSBjeD0iMzciIGN5PSI2MiIgcj0iNC41IiBmaWxsPSIjRkZGN0U2IiBzdHJva2U9Im5vbmUiLz48Y2lyY2xlIGN4PSIzNyIgY3k9IjEwMiIgcj0iNC41IiBmaWxsPSIjRkZGN0U2IiBzdHJva2U9Im5vbmUiLz48Y2lyY2xlIGN4PSIzNyIgY3k9IjE0MiIgcj0iNC41IiBmaWxsPSIjRkZGN0U2IiBzdHJva2U9Im5vbmUiLz48cmVjdCB4PSIyNCIgeT0iMzYiIHdpZHRoPSIxNDgiIGhlaWdodD0iMTMyIiByeD0iMjQiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMTQwIDM2djI4bDEwLTcgMTAgN1YzNiIgZmlsbD0iI0ZGNkI1QiIvPjxjaXJjbGUgY3g9IjkyIiBjeT0iOTYiIHI9IjI0IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iMTQ0IiBjeT0iOTYiIHI9IjI0IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTExNiA5Nmg0IiBmaWxsPSJub25lIi8+PGNpcmNsZSBjeD0iOTciIGN5PSI5OSIgcj0iNyIgZmlsbD0iIzE1MTUxQSIgc3Ryb2tlPSJub25lIi8+PGNpcmNsZSBjeD0iMTM5IiBjeT0iOTkiIHI9IjciIGZpbGw9IiMxNTE1MUEiIHN0cm9rZT0ibm9uZSIvPjxjaXJjbGUgY3g9Ijg2IiBjeT0iMTQwIiByPSI2IiBmaWxsPSIjRkY5QThCIiBzdHJva2U9Im5vbmUiLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxNDAiIHI9IjYiIGZpbGw9IiNGRjlBOEIiIHN0cm9rZT0ibm9uZSIvPjxwYXRoIGQ9Ik0xMDYgMTM4cTEyIDExIDI0IDAiIGZpbGw9Im5vbmUiLz48L2c+PHJlY3QgeD0iMzc4LjciIHk9IjExMiIgd2lkdGg9IjE4NC4zIiBoZWlnaHQ9IjM0IiByeD0iNiIgZmlsbD0iI0ZGRDIzRiIgdHJhbnNmb3JtPSJyb3RhdGUoLTEuNiAzNzguNyAxNDYpIi8+PGcgZmlsbD0iIzE1MTUxQSI+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjE0LjAwIDE0Ni4wMCkgc2NhbGUoMC4xMDQwMCAtMC4xMDQwMCkiIGQ9Ik03NTQgNjMwSDgyOVY0ODBINzU0VjMzOEg1NjdWNzYwSDc1NFpNMjc5IDQyNlEyMzcgMzg0IDE4My4wIDM2Mi4wUTEyOSAzNDAgNzAgMzQwTDQwIDQ4MFE4OCA0ODAgMTI1LjUgNTA5LjVRMTYzIDUzOSAxNzcgNjAySDU1Vjc1Mkg1MDFWNjAySDM4MFEzOTQgNTM5IDQzMS41IDUwOS41UTQ2OSA0ODAgNTE3IDQ4MEw0ODcgMzQwUTQyOCAzNDAgMzc0LjAgMzYyLjBRMzIwIDM4NCAyNzkgNDI2Wk01OTggMzA4UTY2NiAzMDggNzEwLjUgMjY0LjVRNzU1IDIyMSA3NTUgMTU0UTc1NSA4NyA3MTAuNSA0My41UTY2NiAwIDU5OCAwSDIzMlExNjQgMCAxMTkuNSA0My41UTc1IDg3IDc1IDE1NFE3NSAyMjEgMTE5LjUgMjY0LjVRMTY0IDMwOCAyMzIgMzA4Wk01NDggMTM1UTU1NiAxMzUgNTYxLjUgMTQwLjVRNTY3IDE0NiA1NjcgMTU0UTU2NyAxNjIgNTYxLjUgMTY3LjVRNTU2IDE3MyA1NDggMTczSDI4MlEyNzQgMTczIDI2OC41IDE2Ny41UTI2MyAxNjIgMjYzIDE1NFEyNjMgMTQ2IDI2OC41IDE0MC41UTI3NCAxMzUgMjgyIDEzNVoiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyOTguNjYgMTQ2LjAwKSBzY2FsZSgwLjEwNDAwIC0wLjEwNDAwKSIgZD0iTTc2MiAzMjFWNzUySDU3NFY2ODZIMjY4Vjc1Mkg4MFYzMjFaTTU3NCA0NzFIMjY4VjUzNkg1NzRaTTc4MiAyNjFINjBWMTEwSDMyN1YwSDUxNFYxMTBINzgyWiIvPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDM4NC42NiAxNDYuMDApIHNjYWxlKDAuMTA0MDAgLTAuMTA0MDApIiBkPSJNMjc5IDQxM1EyMzkgMzczIDE4Ny41IDM1MS41UTEzNiAzMzAgODAgMzMwTDQwIDQ4MFExMDEgNDgwIDE0My4wIDUyNC41UTE4NSA1NjkgMTg1IDY1N1Y3NjBIMzcyVjY1N1EzNzIgNTY5IDQxNC4wIDUyNC41UTQ1NiA0ODAgNTE3IDQ4MEw0NzcgMzMwUTQyMSAzMzAgMzY5LjUgMzUxLjVRMzE4IDM3MyAyNzkgNDEzWk01NzIgNzYwSDc2MFYyNjVINTcyVjUxNUg0NzJWNjY1SDU3MlpNMjY4IDI4NVYxNTBINzYwVjBIODBWMjg1WiIvPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQ2OC4zOCAxNDYuMDApIHNjYWxlKDAuMTA0MDAgLTAuMTA0MDApIiBkPSJNMjI5IDQxM1ExNzUgMzQ2IDgwIDMzMEw0MCA0NjBRODYgNDc2IDEwNy41IDUwMy41UTEyOSA1MzEgMTM3LjAgNTg4LjBRMTQ1IDY0NSAxNDUgNzYwSDMxMlEzMTIgNjQ1IDMyMC4wIDU4OC4wUTMyOCA1MzEgMzQ5LjUgNTAzLjVRMzcxIDQ3NiA0MTcgNDYwTDM3NyAzMzBRMjgyIDM0NiAyMjkgNDEzWk02MjQgNzYwSDc5MlYzMzBINjI0VjQ3MEg1OTRWMzMwSDQyN1Y3NjBINTk0VjYyMEg2MjRaTTYzNSAzMDhRNzAzIDMwOCA3NDcuNSAyNjQuNVE3OTIgMjIxIDc5MiAxNTRRNzkyIDg3IDc0Ny41IDQzLjVRNzAzIDAgNjM1IDBIMjY5UTIwMSAwIDE1Ni41IDQzLjVRMTEyIDg3IDExMiAxNTRRMTEyIDIyMSAxNTYuNSAyNjQuNVEyMDEgMzA4IDI2OSAzMDhaTTU4NSAxMzVRNTkzIDEzNSA1OTguNSAxNDAuNVE2MDQgMTQ2IDYwNCAxNTRRNjA0IDE2MiA1OTguNSAxNjcuNVE1OTMgMTczIDU4NSAxNzNIMzE5UTMxMSAxNzMgMzA1LjUgMTY3LjVRMzAwIDE2MiAzMDAgMTU0UTMwMCAxNDYgMzA1LjUgMTQwLjVRMzExIDEzNSAzMTkgMTM1WiIvPjwvZz48L3N2Zz4NCg==" alt="장부선생"></div></div>
+    <div class="step" id="stepLabel"></div>
+    <div class="hr" id="hRight"></div>
+  </div>
+</header>
+<main id="app" aria-live="polite"></main>
+<footer class="disc">
+  <div id="discTxt">본 서비스는 참고용이며, 실제 세무 처리는 반드시 전문가와 상담하시기 바랍니다.</div>
+  <div class="copy">© 2024 Ledger Teacher. All rights reserved. · <a href="../dist-public/legal/terms-of-service.html" target="_blank" rel="noopener">이용약관</a></div>
+</footer>
+
+<script>
+'use strict';
+/* ---------- 계산부 (src/refund-check.js 복사본) ---------- */
+function createRefund() {
+  const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+  function lastUsableYear(y, rules) {
+    for (const r of rules.carryYears || []) if ((r.fromYear == null || y >= r.fromYear) && (r.toYear == null || y <= r.toYear)) return y + r.years;
+    return null;
+  }
+  function normalize(years) {
+    return (years || []).map((r) => ({ year: Number(r.year),
+      income: isNum(r.income) ? Math.round(r.income) : null,
+      claimed: isNum(r.claimed) ? Math.round(r.claimed) : null,
+      balance: isNum(r.balance) ? Math.round(r.balance) : null })).sort((a, b) => a.year - b.year);
+  }
+  function analyze(yearsIn, rules) {
+    const years = normalize(yearsIn); const rows = [], warnings = [], notes = [];
+    let pools = [], chainBroken = false, rootYear = null;
+    const fmt = (n) => n.toLocaleString('ko-KR');
+    const warn = (year, code, msg, detail) => { warnings.push({ year, code, msg, detail: detail || '', downstream: rootYear != null && year > rootYear }); if (rootYear == null) rootYear = year; };
+    const sum = (ps) => ps.reduce((s, p) => s + p.remaining, 0);
+    for (const y of years) {
+      const row = { year: y.year, income: y.income, claimed: y.claimed, reportedBalance: y.balance, status: 'ok', opening: null, occurred: 0, computedDeduction: null, diff: null, expired: 0, closing: null, expiresBy: null, flags: [] };
+      rows.push(row);
+      if (y.income == null) { row.status = 'unknown'; row.note = '소득금액을 몰라 이 해와 이후 해를 점검하지 못합니다.'; chainBroken = true; continue; }
+      if (chainBroken) { row.status = 'unchecked'; row.note = '앞 해의 값을 몰라 이 해의 이월 잔액을 계산하지 못합니다.'; continue; }
+      row.opening = sum(pools);
+      const kept = [];
+      for (const p of pools) { const last = lastUsableYear(p.year, rules); if (last != null && y.year > last) row.expired += p.remaining; else kept.push(p); }
+      pools = kept;
+      const usable = sum(pools);
+      let want = y.income > 0 ? Math.min(usable, y.income) : 0, deducted = 0;
+      for (const p of pools) { if (want <= 0) break; const take = Math.min(p.remaining, want); p.remaining -= take; want -= take; deducted += take; }
+      pools = pools.filter((p) => p.remaining > 0);
+      row.computedDeduction = deducted;
+      if (y.income < 0) { row.occurred = -y.income; pools.push({ year: y.year, remaining: -y.income }); }
+      row.closing = sum(pools);
+      const ends = pools.map((p) => lastUsableYear(p.year, rules)).filter((v) => v != null);
+      row.expiresBy = ends.length ? Math.min(...ends) : null;
+      if (y.claimed != null) row.diff = y.claimed - deducted;
+      const before = warnings.length;
+      if (row.opening > 0 && y.income > 0 && y.claimed === 0 && deducted > 0) warn(y.year, 'R-1', '공제할 이월결손금이 남아 있는데 신고서의 공제액이 0원입니다(공제 누락 가능).', `계산상 공제 가능 ${fmt(deducted)}원`);
+      else if (y.claimed != null && y.claimed !== deducted) warn(y.year, 'R-2', y.claimed < deducted ? '신고서 공제액이 계산한 공제 가능액보다 적습니다.' : '신고서 공제액이 계산한 공제 가능액보다 많습니다.', `신고서 ${fmt(y.claimed)}원 / 계산 ${fmt(deducted)}원`);
+      if (row.expired > 0) { row.flags.push('expired'); notes.push(`${y.year}년: 공제 기한이 지나 소멸하는 이월결손금 ${fmt(row.expired)}원이 있습니다(기한 규칙 확인 필요).`); }
+      if (y.balance != null && y.balance !== row.closing) {
+        if (y.balance === 0 && row.closing > 0) warn(y.year, 'R-3', '공제할 수 있는 기간인데 신고서의 이월결손금 잔액이 0원입니다(소멸 처리 오류 가능).', `신고서 0원 / 계산 ${fmt(row.closing)}원`);
+        else if (warnings.length === before) warn(y.year, 'R-5', '신고서의 이월결손금 잔액이 계산한 잔액과 다릅니다.', `신고서 ${fmt(y.balance)}원 / 계산 ${fmt(row.closing)}원`);
+      }
+      if (y.claimed != null && y.claimed > 0 && y.income <= 0) warn(y.year, 'R-6', '소득금액이 0 이하인데 공제액이 있습니다. 입력한 값(부호, 연도)을 확인해 주세요.');
+      if (y.claimed != null && y.income > 0 && y.claimed > y.income) warn(y.year, 'R-6', '공제액이 그 해 소득금액보다 큽니다. 입력한 값을 확인해 주세요.');
+      if (warnings.length > before) { row.status = 'warn'; row.flags.push(...warnings.slice(before).map((w) => w.code)); }
+    }
+    const missed = rows.reduce((s, r) => s + (r.diff != null && r.diff < 0 ? -r.diff : 0), 0);
+    const checked = rows.filter((r) => r.status === 'ok' || r.status === 'warn').length;
+    return { rows, warnings, notes: [...new Set(notes)], summary: { years: rows.length, checked, unchecked: rows.length - checked, warned: new Set(warnings.map((w) => w.year)).size, rootYear, missedDeduction: missed } };
+  }
+  return { analyze };
+}
+const ENGINE = createRefund();
+/* 규칙 값: config/loss-carryover-rules.json (확인 전 가정) */
+const RULES = { carryYears: [{ fromYear: 2018, toYear: 2019, years: 10 }, { fromYear: 2020, years: 15 }] };
+/* 체험용 가상 시나리오 (실제 데이터 아님): 상가를 분양받고 몇 해 공실이라 손실이 쌓였고,
+   소득이 난 해에 공제했지만 마지막 해에는 이월결손금 공제를 빠뜨린 임대사업자 */
+const DEMO = [
+  { year: 2018, income: -18000000, claimed: 0, balance: 18000000 },
+  { year: 2019, income: -24000000, claimed: 0, balance: 42000000 },
+  { year: 2020, income: 5000000, claimed: 5000000, balance: 37000000 },
+  { year: 2021, income: -9000000, claimed: 0, balance: 46000000 },
+  { year: 2022, income: -11000000, claimed: 0, balance: 57000000 },
+  { year: 2023, income: 13500000, claimed: 13500000, balance: 43500000 },
+  { year: 2024, income: 16300000, claimed: 16200000, balance: 27300000 },
+  { year: 2025, income: 18000000, claimed: 0, balance: 27300000 },
+];
+const FIELDS = {
+  income: { label: '공제 전 소득금액', hint: '손실(적자)이면 앞에 마이너스(-)를 붙이세요.', ph: '예: 50,000,000',
+    find: ['⑨ <b>종합소득금액 및 결손금·이월결손금공제명세서</b>의 <b>"부동산임대업의 사업소득금액(주택임대업 제외)"</b> 줄, <b>① 소득별 소득금액</b>입니다. 이월결손금을 공제하기 <b>전</b> 금액입니다.', '<b>적자인 해</b>는 ⑨ 표에 0으로 나옵니다. 이때는 신고서의 <b>⑦ 사업소득명세서</b> 부동산임대업 사업장의 <b>⑩ 소득금액</b>(예: -18,000,000)을 <b>음수(-)</b>로 입력하세요.'], hi: 'income' },
+  claimed: { label: '당해연도 공제된 이월결손금', hint: '', ph: '예: 5,000,000',
+    find: ['⑨ 표의 같은 줄, <b>④ "부동산임대업의 사업소득(주택임대업 제외) 이월결손금 공제금액"</b> 칸의 숫자입니다. 비어 있으면 0을 입력하세요.', '바로 옆 <b>③ 칸</b>(부동산임대업 <u>외</u>의 사업소득용)과 혼동하지 마세요.'], hi: 'claimed' },
+  balance: { label: '다음 연도로 넘어가는 잔액', hint: '', ph: '예: 0', opt: true,
+    find: ['<b>⑩ 이월결손금명세서</b>의 <b>"부동산임대업의 사업소득(주택임대업 제외)"</b> 묶음, <b>⑦ 잔액</b>입니다(여러 줄이면 합계). 없으면 비워 두세요.', '신고서에는 <b>일부 연도 줄만</b> 있거나 <b>이전 숫자</b>가 남아 있을 수 있습니다. 이 도구는 연도별 소득과 공제액으로 다시 계산하므로, 신고서에 적힌 값을 그대로 입력하세요.'], hi: 'balance' },
+  paid: { label: '이 해에 낸 종합소득세', hint: '', ph: '예: 7,000,000', opt: true,
+    find: ['신고서의 <b>납부할 세액</b>(추가 납부액 포함) 또는 홈택스 납부 내역에서 확인합니다. 입력하면 환급 가능 금액의 <b>상한</b>을 참고로 표시합니다.'], hi: 'paid' },
+};
+
+/* ---------- 상태 ---------- */
+const NOW = new Date();
+const THIS_TAX_YEAR = NOW.getFullYear() - 1;          // 직전 귀속연도
+const YEAR_MIN = 2018;
+const S = { step: 0, mode: null, start: THIS_TAX_YEAR - 5, end: THIS_TAX_YEAR, yIdx: 0, data: {}, checks: [false, false, false] };
+const $app = document.getElementById('app');
+const fmt = (n) => n.toLocaleString('ko-KR');
+const won = (n) => (n == null ? '-' : fmt(n) + '원');
+function kr(n) {
+  if (n == null || n === 0) return n === 0 ? '0원' : '';
+  const sign = n < 0 ? '−' : ''; let a = Math.abs(n); const eok = Math.floor(a / 1e8); a -= eok * 1e8; const man = Math.floor(a / 1e4);
+  return sign + [eok ? eok + '억' : '', man ? fmt(man) + '만' : '', (!eok && !man) ? fmt(a) : ''].filter(Boolean).join(' ') + '원';
+}
+const parseAmt = (v) => { const t = String(v).replace(/[,\s원]/g, '').replace(/[−–]/g, '-'); if (t === '' || t === '-') return null; const n = Number(t); return Number.isFinite(n) ? Math.round(n) : null; };
+const yearsList = () => { const a = []; for (let y = S.start; y <= S.end; y++) a.push(y); return a; };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const inputRows = () => yearsList().map((y) => { const d = S.data[y] || {}; return { year: y, income: d.unknown ? null : (d.income ?? null), claimed: d.claimed ?? null, balance: d.balance ?? null, paid: d.paid ?? null }; });
+const analysis = () => ENGINE.analyze(inputRows(), RULES);
+const hasWarn = (y) => analysis().rows.find((r) => r.year === y && r.status === 'warn');
+
+/* ---------- 공통 ---------- */
+const STEP_TITLES = ['소개', '연도 선택', '홈택스 안내', '연도별 입력', '입력 확인', '점검 결과', '확인 방법', '최종 요약시트'];
+const TOTAL_STEPS = 6;
+const stepNo = (s) => (s === 7 ? 6 : s === 6 ? 5 : s);   // 6단계(해별 경정청구 화면)는 5단계 점검 결과에서 이어지는 화면이라 같은 번호로 센다
+function progress() {
+  let frac = 0;
+  if (S.step === 3) frac = S.yIdx / yearsList().length;
+  return (stepNo(S.step) + frac) / TOTAL_STEPS;
+}
+function go(step) { if (step === 4) { S.claimYears = undefined; S.claimAmt = undefined; S.amtMsg = undefined; S.plan = undefined; S.claimView = undefined; S.claimDone = undefined; S.hx = undefined; } S.step = step; render(); window.scrollTo(0, 0); }
+function nextBtn(label, id = 'next') { return `<button class="btn primary" id="${id}">${label}</button>`; }
+function backRow() { return ''; }
+function goBack() {
+  if (S.step === 6) { try { const P = planInfo(); if (P.plan === 'claim') { const vy = claimViewYear(P), cur = (S.hx && S.hx[vy]) || 0; if (cur > 0) { S.hx = Object.assign({}, S.hx, { [vy]: cur - 1 }); render(); window.scrollTo(0, 0); return; } } } catch (e) { /* 일반 뒤로가기 */ } }
+  if (S.step === 3 && S.yIdx > 0) { S.yIdx--; return render(); }
+  if (S.step === 4) { S.yIdx = yearsList().length - 1; return go(3); }
+  if (S.step > 0) go(S.step - 1);
+}
+
+/* ---------- 화면 ---------- */
+/* ---------- 셀프 경정청구용: 신고서에 실제로 반영된 공제액 기준 장부 ---------- */
+const lastUsableYear = (y) => { for (const r of RULES.carryYears) if ((r.fromYear == null || y >= r.fromYear) && (r.toYear == null || y <= r.toYear)) return y + r.years; return null; };
+/* 해마다 오래된 결손금부터 공제하며 따라간다. policy: 'auto'(공제가 덜 반영된 해는 모두 청구한다고 가정) 또는 청구할 해의 Set.
+   청구하는 해는 "가능한 최대 공제"로, 나머지 해는 신고서에 실제로 적힌 공제로 계산한다. */
+function simulate(inputs, endYear, policy, amounts) {
+  const rows = inputs.slice().sort((a, b) => a.year - b.year);
+  const vint = []; let active = [];
+  const years = [], candidates = [], assumed = [], over = [];
+  let broken = null;
+  for (const r of rows) {
+    if (r.year > endYear) break;
+    if (r.income == null) { broken = r.year; break; }
+    active = active.filter((v) => { const last = lastUsableYear(v.year); if (last != null && r.year > last) { v.lost = v.amount - v.used; return false; } return true; });
+    const before = {}; vint.forEach((v) => { before[v.year] = v.used; });
+    const pool = active.reduce((s, v) => s + (v.amount - v.used), 0);
+    const possible = r.income > 0 ? Math.min(pool, r.income) : 0;
+    const actual = r.claimed == null ? 0 : r.claimed;
+    if (r.claimed == null) assumed.push(r.year);
+    const dl = claimDeadline(r.year);
+    const wantMore = possible > actual;
+    if (wantMore) candidates.push({ year: r.year, income: r.income, actual, possible, state: dl.state, label: dl.label });
+    const isClaim = wantMore && dl.state !== 'past' && (policy === 'auto' || policy.has(r.year));
+    const target = isClaim && amounts && amounts[r.year] != null ? Math.max(actual, Math.min(possible, amounts[r.year])) : possible;
+    let left = isClaim ? target : actual; const cur = {};
+    for (const v of active) { if (left <= 0) break; const t = Math.min(v.amount - v.used, left); v.used += t; left -= t; cur[v.year] = t; }
+    if (left > 0) over.push({ year: r.year, extra: left });
+    active = active.filter((v) => v.amount - v.used > 0);
+    if (r.income < 0) { const nv = { year: r.year, amount: -r.income, used: 0, lost: 0 }; vint.push(nv); active.push(nv); }
+    const items = vint.map((v) => ({ year: v.year, amount: v.amount, before: before[v.year] || 0, cur: cur[v.year] || 0, lost: v.lost, remain: v.amount - v.used - v.lost, lastYear: lastUsableYear(v.year) }));
+    years.push({ year: r.year, income: r.income, balance: r.balance, paid: r.paid, actual, possible, isClaim, applied: (isClaim ? target : actual) - left, items,
+      remainAfter: items.reduce((s, x) => s + x.remain, 0), lostTotal: items.reduce((s, x) => s + x.lost, 0) });
+  }
+  return { years, last: years.find((y) => y.year === endYear) || null, candidates, assumed, over, broken };
+}
+function claimDeadline(year) {   // 법정신고기한(다음 해 5월 말) + 5년. 확인 필요
+  const d = new Date(year + 6, 4, 31), ms = d - NOW;
+  return { label: `${year + 6}년 5월 말경`, state: ms < 0 ? 'past' : Math.ceil(ms / 86400000) <= 183 ? 'soon' : 'ok' };
+}
+const deadlineChip = (dl) => dl.state === 'past' ? '<span class="rc2 n">기한 지났을 수 있음</span>' : dl.state === 'soon' ? '<span class="rc2 w">기한 임박</span>' : '<span class="rc2 g">기한 여유</span>';
+function planInfo() {
+  const inputs = inputRows(), Y = S.end;
+  const base = simulate(inputs, Y, new Set());           // 신고서에 실제로 적힌 공제 그대로
+  const auto = simulate(inputs, Y, 'auto');              // 덜 반영된 해를 모두 청구한다고 가정
+  const cands = auto.candidates, avail = cands.filter((c) => c.state !== 'past');
+  const amtOf = (y) => (S.claimAmt && typeof S.claimAmt[y] === 'number' ? S.claimAmt[y] : null);
+  const act = avail.map((c) => c.year).filter((y) => amtOf(y) != null && amtOf(y) > 0);   // 공제금액을 입력한 해 = 청구할 해
+  const sel = act;
+  const selSim = simulate(inputs, Y, new Set(act), S.claimAmt || {});
+  const a = analysis();
+  const priorWarn = a.warnings.filter((w) => w.year < Y && !cands.some((c) => c.year === w.year) && (!cands.length || w.year < cands[0].year));
+  const end = base.last;
+  const remainActual = end ? end.remainAfter : 0;
+  const remainAfterClaims = selSim.last ? selSim.last.remainAfter : 0;
+  const claimable = act.length > 0;
+  const carryAmt = claimable ? remainAfterClaims : remainActual;
+  const claimYears = selSim.years.filter((y) => y.isClaim);
+  return { inputs, base, auto, selSim, cands, avail, sel, act, a, end, priorWarn, remainActual, remainAfterClaims, claimable, carryAmt, plan: 'claim', claimYears };
+}
+function claimViewYear(P) { const ys = P.claimYears.map((y) => y.year); if (ys.includes(S.claimView)) return S.claimView; const done = S.claimDone || []; const f = ys.find((y) => !done.includes(y)); return f != null ? f : ys[0]; }
+const COPY = {};
+function ledgerTable(items, mode, Y) {
+  const heads = { status: ['발생연도', '발생금액', '전기까지 공제', `${Y}년 신고서 공제`, '잔액'], claim: ['발생연도', '발생금액', '전기까지 공제액', '당기공제액', '잔액'] }[mode];
+  const cells = (i) => mode === 'status' ? [i.year, i.amount, i.before, i.claimedCur, i.remainActual]
+    : mode === 'claim' ? [i.year, i.amount, i.before, i.proposedCur, i.remainProposed]
+    : [i.year, i.amount, i.before + i.claimedCur, null, i.remainActual];
+  const data = items.map(cells);
+  const tot = [0, 1, 2, 3, 4].map((c) => c === 0 ? '합계' : (data.every((r) => r[c] == null) ? null : data.reduce((s, r) => s + (r[c] || 0), 0)));
+  const f = (v, c) => (v == null ? '-' : (c === 0 ? v : fmt(v)));
+  const html = `<div class="tablewrap" style="margin:10px 0 0"><table class="t ledger"><thead><tr>${heads.map((x) => `<th>${x}</th>`).join('')}</tr></thead><tbody>
+    ${data.map((r) => `<tr>${r.map((v, c) => `<td class="${mode === 'claim' && c === 3 && v ? 'cur' : ''}">${f(v, c)}</td>`).join('')}</tr>`).join('')}
+    <tr class="tot">${tot.map((v, c) => `<td>${f(v, c)}</td>`).join('')}</tr></tbody></table></div>`;
+  const tsv = [heads.join('\t'), ...data.map((r) => r.map((v) => (v == null ? '' : v)).join('\t')), tot.map((v) => (v == null ? '' : v)).join('\t')].join('\n');
+  return { html, tsv };
+}
+function copyText(t, btn) {
+  const done = () => { const o = btn.dataset.html || btn.innerHTML; btn.dataset.html = o; btn.textContent = '복사 완료'; setTimeout(() => { btn.innerHTML = o; }, 1500); };
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { /* 복사 불가 */ } ta.remove(); };
+  try { navigator.clipboard.writeText(t).then(done, fallback); } catch (e) { fallback(); }
+}
+const copyBtn = (key) => `<button type="button" class="copybtn noprint" data-copy="${key}">표 복사 (엑셀·메모에 붙여넣기)</button>`;
+
+const screens = {
+  0() {
+    return `<div class="card">
+      <div class="eyebrow">상가(상업용 부동산) 임대사업자용</div>
+      <h1>놓친 이월결손금 찾기</h1>
+      <p class="lead">종합소득세 신고서의 <b>임대소득</b>을 확인하여 남은 이월결손금과 <b>경정청구 방법</b>을 안내합니다.</p>
+      <div class="principle"><h2>이월결손금 공제 원리</h2>
+        <div class="pstep"><span class="dot" style="background:#fde2e0;color:#c0392b">↓</span><div><b>1. 손실 발생</b><small>상가 임대 소득이 적자로 나온 해</small></div></div>
+        <div class="pstep"><span class="dot" style="background:#dbe7ee;color:#0b756b">−</span><div><b>2. 이후 연도 공제</b><small>상가 임대 소득이 난 해에 그 금액만큼 소득에서 뺌</small></div></div>
+        <div class="pstep"><span class="dot" style="background:#fde9a6;color:#8a5a00">⌛</span><div><b>3. 잔액 관리와 소멸</b><small>발생 시기에 따라 10~15년 안에 못 쓰면 사라짐 <button type="button" class="tag no tagbtn" data-rule aria-haspopup="dialog">기준 확인 ⓘ</button></small></div></div>
+        <small style="color:var(--sub)">상가 공실로 인한 임대손실은 근로소득 등과 합산하지 않고, 이후 상가 임대소득에서만 공제합니다.</small>
+      </div>
+      <div class="two">
+        <div class="do"><h3>✔ 도와드리는 일</h3><ul><li>연도별 공제 흐름 계산</li><li>신고서와 어긋난 해 표시</li><li>홈택스에서 어디를 볼지 안내</li></ul></div>
+        <div class="dont"><h3>✕ 하지 않는 일</h3><ul><li>세금 신고·청구 대행</li><li>환급 금액 계산·보장</li><li>개인정보 서버 저장</li></ul></div>
+      </div>
+      <div class="box priv">🛡 개인정보는 받지 않습니다. 입력하신 숫자는 이 기기 밖으로 전송되지 않습니다.</div>
+      ${nextBtn('내 숫자로 직접 확인하기 →', 'mine')}
+      <button class="btn ghost" id="demo">샘플로 먼저 체험해 보기</button>
+    </div>`;
+  },
+  1() {
+    const demo = S.mode === 'demo';
+    const opts = (sel) => { let h = ''; for (let y = YEAR_MIN; y <= THIS_TAX_YEAR; y++) h += `<option value="${y}"${y === sel ? ' selected' : ''}>${y}년</option>`; return h; };
+    return `<div class="card">
+      ${demo ? '<div class="demo-banner">체험 모드: 가상 시나리오입니다. 값은 바꿀 수 없고 단계는 실제와 같습니다.</div>' : ''}
+      <h1><span class="ic">📅</span>확인할 연도 선택</h1>
+      <p class="lead">처음 손실이 난 해부터 가장 최근 해까지 점검합니다.</p>
+      ${demo ? `<div class="box info" style="font-size:17px"><b>${S.start}년 ~ ${S.end}년</b> (가상 시나리오로 고정)<br><small>체험 모드에서는 연도를 바꿀 수 없습니다. 내 연도를 고르려면 아래 "내 값으로 직접 점검하기"를 누르세요.</small></div>
+        <button class="btn ghost" id="toMine" style="margin:0 0 6px">내 값으로 직접 점검하기 (연도 직접 선택)</button>` : `<div class="sel2">
+        <div><div class="mini">처음 손실이 난 해</div><select id="selStart">${opts(S.start)}</select></div>
+        <div><div class="mini">가장 최근 해</div><select id="selEnd">${opts(S.end)}</select></div>
+      </div>`}
+      <div class="hint neg" id="yearErr"></div>
+      <div class="box info"><b>잘 모르겠다면?</b><br>손실이 처음 난 해부터 최근 해까지 점검하는 것이 가장 정확합니다. 시기를 모르면 최근 5~6년 신고서를 차례로 열어 보세요. 2018년 이전 손실(이월결손금)은 기한 규칙이 확인되지 않았습니다.</div>
+      ${nextBtn('다음: 홈택스 여는 법 →')}
+      ${backRow()}
+    </div>`;
+  },
+  2() {
+    const labels = ['PC로 홈택스에 로그인했습니다.', `연도별 '종합소득세 신고서'를 열 수 있습니다.`, '신고서의 값을 적어 둘 메모(또는 이 화면)를 준비했습니다.'];
+    return `<div class="card">
+      <h1><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0f9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11.5" rx="2"/><path d="M2 20h20M10.2 8.6 8.4 10.3l1.8 1.7M13.8 8.6l1.8 1.7-1.8 1.7"/></svg></span>홈택스에서 신고서 열기</h1>
+      <p class="lead">PC에서 홈택스에 접속해 아래 순서로 신고서를 여세요. 이 신고서에서 값을 찾아 다음 화면에 입력합니다.</p>
+      <ol class="steps">
+        <li><span class="no">1</span><div><b>홈택스 로그인</b><small>공동인증서 또는 간편인증</small></div></li>
+        <li><span class="no">2</span><div><b>세금신고 → 신고서 조회/삭제/부속서류 → 전자신고 결과 조회</b><small>세목은 종합소득세, 신고일자 기간을 넣고 조회합니다. 한 번에 최대 2년까지 조회할 수 있습니다(1년·2년 버튼). 사업자(주민)등록번호 입력과 접수구분(전자신고/서면신고) 선택이 필요합니다.</small></div></li>
+        <li><span class="no">3</span><div><b>접수번호(신고서보기)</b><small>같은 해에 수정·경정청구가 있었다면 <b>가장 마지막 신고</b>를 여세요. (나의 홈택스 &gt; 세금신고내역에서 결과를 확인)</small></div></li>
+      </ol>
+      <div class="box info" style="font-size:14px"><b>신고서에서 아래 두 표가 있는 쪽을 열어 두세요.</b><br>⑨ <b>종합소득금액 및 결손금·이월결손금공제명세서</b>, ⑩ <b>이월결손금명세서</b>입니다. 다음 화면부터 이 표에서 값을 찾아 입력합니다.</div>
+      <div class="check"><b>준비 체크리스트</b>
+        ${labels.map((l, i) => `<label><input type="checkbox" data-c="${i}" ${S.checks[i] ? 'checked' : ''}> ${l}</label>`).join('')}
+      </div>
+      ${nextBtn('확인했습니다. 시작할게요 →')}
+      ${backRow()}
+    </div>`;
+  },
+  3() {
+    const ys = yearsList(), y = ys[S.yIdx], d = S.data[y] || (S.data[y] = {}), demo = S.mode === 'demo';
+    const field = (k, link) => {
+      const f = FIELDS[k], val = d[k] == null ? '' : fmt(d[k]);
+      return `<div class="field sep"><div class="lbl"><label for="f_${k}">${f.label}${f.opt ? `<span class="opt">${k === 'balance' && y === S.end ? '(입력하면 남은 금액을 비교합니다)' : '(선택사항)'}</span>` : ''}</label>${link ? `<button type="button" class="where" data-where="${k}" aria-expanded="false">어디서 찾나요?</button>` : ''}</div>
+        <div class="input${demo ? ' ro' : ''}"><input id="f_${k}" data-k="${k}" inputmode="${k === 'income' ? 'text' : 'numeric'}" autocomplete="off" placeholder="${f.ph}" value="${val}" ${demo || d.unknown ? 'readonly' : ''}><span>원</span></div>
+        <div class="hint" id="h_${k}">${f.hint}</div>
+        ${link ? `<div class="help-body" id="w_${k}" hidden>${f.find.map((t) => `<p style="margin:4px 0">${t}</p>`).join('')}${f.hi === 'paid' ? '' : illus(f.hi)}</div>` : ''}</div>`;
+    };
+    const last = S.yIdx === ys.length - 1;
+    return `<div class="card">
+      <h1 style="font-size:22px">${y}년 신고서를 확인해 주세요</h1>
+      ${field('income', true)}${field('claimed', true)}${field('balance', true)}${y === S.end && !demo ? field('paid', true) : ''}
+      ${nextBtn(last ? '다음: 입력 내용 확인 →' : `다음: ${ys[S.yIdx + 1]}년 입력 →`)}
+      ${demo ? '' : `<button class="btn ghost" id="unknown">${d.unknown ? '값을 입력하겠습니다' : '찾을 수 없음 (공란으로 진행)'}</button>`}
+    </div>`;
+  },
+  4() {
+    const rows = inputRows();
+    const blanks = rows.filter((r) => r.income == null).length;
+    const RL = simulate(rows, S.end, new Set()), remainEnd = RL.last;   // 마지막 해 신고서 공제까지 반영한 남은 이월결손금
+    const pen ='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-6"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    const clip = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5" fill="#0f9488" stroke="none"/><path d="M9 4h6v2.5H9z" fill="#eafaf6" stroke="none"/><path d="M9 13l2.2 2.2L15.5 11" stroke="#fff"/></svg>';
+    return `<div class="card">
+      <h1 style="font-size:22px"><span class="ic">${clip}</span>입력한 내용 확인</h1>
+      <p class="lead">입력한 내용이 신고서와 일치하는지 확인하세요. 특히 <b style="color:var(--err)">마이너스(-) 기호</b>를 확인하세요.</p>
+      <div class="tablewrap" style="margin:18px 0"><table class="t conf"><thead><tr><th>연도</th><th>소득금액</th><th>이월결손금공제액</th><th></th></tr></thead><tbody>
+      ${rows.map((r, i) => `<tr class="${r.income == null ? 'unk' : ''}"><td>${r.year}</td>
+        <td class="${r.income != null && r.income < 0 ? 'neg' : ''}">${r.income == null ? '미입력' : fmt(r.income)}</td>
+        <td>${r.claimed == null ? '-' : fmt(r.claimed)}</td>
+        <td class="ed"><button type="button" class="edit" data-edit="${i}" aria-label="${r.year}년 수정">${pen}</button></td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="remain-row"><span>남은 이월결손금<small>${S.end}년 신고서 공제까지 반영</small></span>${remainEnd ? `<b>${fmt(remainEnd.remainAfter)}원</b>` : `<em>${RL.broken ? `${RL.broken}년 소득금액이 비어 있어 계산할 수 없습니다` : '계산할 수 없습니다'}</em>`}</div>
+      <div class="unit" style="text-align:left;margin:-6px 0 14px">= 발생한 손실 합계 − 신고서 공제액 합계 (기한이 지나 공제할 수 없게 된 금액 제외)</div>
+      <div class="box warn conf-warn"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3z" fill="#f59e0b"/><path d="M12 10v5M12 17.5v.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        <div>적자가 난 해의 <b>소득금액</b>은 반드시 <b style="color:var(--err)">마이너스(-)</b>로 입력해야 정확히 계산됩니다.${blanks ? `<br><small>미입력 ${blanks}개 연도는 점검 불가로 표시됩니다.</small>` : ''}</div></div>
+      ${nextBtn('내용이 맞습니다. 분석하기 →')}
+      <button class="btn ghost" id="fix">수정하러 가기</button>
+    </div>`;
+  },
+  5() {
+    const P = planInfo(), Y = S.end, end = P.end;
+    if (!end) return `<div class="card"><h1>점검 결과</h1><div class="box warn">${P.base.broken ? `${P.base.broken}년 소득금액을 몰라 ${Y}년까지 계산하지 못했습니다. 그 해 신고서 값을 찾아 입력해 주세요.` : `${Y}년 값이 없습니다. 연도 범위를 확인해 주세요.`}</div><div class="row-btn"><button class="btn ghost" id="fix">입력값 다시 수정하기</button></div></div>`;
+    const notes = [];
+    if (P.base.assumed.length) notes.push(`신고서 공제액을 입력하지 않은 해(${P.base.assumed.join(', ')}년)는 0원으로 계산했습니다.`);
+    P.base.over.forEach((o) => notes.push(`${o.year}년 신고서 공제액이 남은 이월결손금보다 ${won(o.extra)} 많습니다. 입력값을 확인하세요.`));
+    const remItems = end.items.filter((i) => i.remain > 0);
+    const rep = end.balance;
+    const lead = P.cands.length
+      ? `<b>${P.cands.map((c) => c.year).join(', ')}년</b> 신고서에는 이월결손금 공제가 계산보다 적게 반영된 것으로 보입니다.`
+      : `입력한 값 기준으로는 <b>어긋남이 없습니다.</b> 입력값이 맞는지, 다른 공제 항목은 별도로 확인하세요.`;
+    const candRows = P.cands.map((c) => { const past = c.state === 'past'; const yr = P.selSim.years.find((y) => y.year === c.year);
+      const isDone = (S.claimDone || []).includes(c.year);
+      const val = yr && yr.isClaim ? fmt(yr.applied) : '';
+      const amt = past ? '<span class="dim">-</span>' : `<div class="amtbox"><input class="amt" type="text" inputmode="numeric" data-amt="${c.year}" value="${val}" placeholder="금액 입력" aria-label="${c.year}년 공제금액 입력"><span>원</span></div>${S.amtMsg && S.amtMsg.year === c.year ? `<small><b class="bad">${S.amtMsg.text}</b></small>` : ''}`;
+      return `<tr class="${past ? 'unk' : ''}"><td class="ck"><span class="rc2 ${isDone ? 'g' : 'n'}">${isDone ? '제출완료' : '미제출'}</span></td><td>${c.year}</td><td>${fmt(c.income)}</td><td>${fmt(c.actual)}</td><td class="mx">${fmt(yr ? yr.possible : c.possible)}</td><td class="cur">${amt}</td><td class="cd">${past ? '<span class="dim">기한 지남</span>' : `<button type="button" class="rowbtn" data-claim="${c.year}" ${val ? '' : 'disabled'}>${isDone ? '다시 보기' : '청구하기'}</button>`}</td></tr>`; }).join('');
+    const incr = P.selSim.years.filter((y) => y.isClaim).reduce((s, y) => s + y.applied - y.actual, 0);
+    const maxSum = P.selSim.years.filter((y) => y.isClaim).reduce((s, y) => s + y.applied, 0);
+    const cy = P.act;
+    const mid = cy.length > 1 ? P.base.years.filter((y) => y.year > Math.min(...cy) && y.year < Math.max(...cy) && !cy.includes(y.year) && y.actual > 0).map((y) => y.year) : [];
+    const opt = (key, title, body, extra) => `<div class="optcard"><div class="oh">${title}</div>${body}${extra || ''}</div>`;
+    const cards = []; let letter = 0; const L = () => String.fromCharCode(65 + letter++);
+    if (P.cands.length) cards.push(opt('claim', `${L()}. 공제가 덜 반영된 해, 경정청구로 확인`,
+      `<p>아래 해는 공제할 수 있는 금액이 신고서보다 많습니다. 청구할 해의 <b>공제금액을 입력</b>하세요. 금액을 입력한 해만 청구 대상이 됩니다. 이월결손금은 한 번만 공제할 수 있으며, 오래된 해부터 차례로 사용합니다.</p>
+        <div class="tablewrap" style="margin:8px 0 0"><table class="t cand"><thead><tr><th>제출상태</th><th>연도</th><th>임대소득</th><th>신고서 공제</th><th>공제가능금액</th><th>공제할 이월결손금</th><th>청구</th></tr></thead><tbody>${candRows}</tbody></table></div>
+        <div class="sumline">${P.act.length ? `청구 대상 <b>${P.act.length}개 해</b>(${P.act.join(', ')}년) · 공제금액 합계 <b>${won(maxSum)}</b>(신고서 반영분 제외 시 <b>${won(incr)}</b> 추가) · 청구 후 남는 이월결손금 <b>${won(P.remainAfterClaims)}</b>` : '청구할 해의 공제금액을 입력하면 합계가 표시됩니다.'}</div>
+        ${P.act.length > 1 ? '<small class="dim">오래된 해부터 청구하세요. 뒤 해의 입력표는 앞 해 청구를 반영한 값입니다.</small>' : ''}
+        ${mid.length ? `<div class="box warn" style="font-size:13px;margin:10px 0 0">청구하는 해 사이의 <b>${mid.join(', ')}년</b> 신고서는 세액이 같아도 이월결손금명세서 숫자가 달라질 수 있습니다. 청구 기한 안이면 명세서와 공제 내역을 정정할 수 있으니, 정정이 필요한지 확인하세요.</div>` : ''}
+        <small class="dim">청구 기한은 법정신고기한이 지난 후 5년 이내입니다(국세기본법 제45조의2).</small>`, '', !P.act.length));
+    if (P.priorWarn.length) cards.push(opt('ask', `${L()}. 앞 해 신고 내용 확인 필요`,
+      `<p>${[...new Set(P.priorWarn.map((w) => w.year))].join(', ')}년 신고서 공제가 계산과 다릅니다. 이 도구는 이월결손금이 덜 반영된 해의 경정청구만 다루므로, 앞 해는 세무사에게 확인하세요.</p>`));
+    return `<div class="card">
+      <h1 style="margin-bottom:4px">점검 결과</h1>
+      <p class="lead" style="margin:0">${Y}년 신고서까지 이월결손금이 어떻게 반영됐고 얼마 남았는지 정리했습니다.</p>
+      <div class="lead-box ${P.cands.length ? 'w' : ''}" style="margin-top:14px;font-size:15px">${lead}</div>
+      ${notes.length ? `<ul class="plain dim" style="font-size:13px">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+      <h2 class="sec">① 남은 이월결손금</h2>
+      <div class="bignum"><small>${Y}년 신고서까지 반영한, 남은 이월결손금</small><b>${won(P.remainActual)}</b>${P.remainActual ? `<span>${kr(P.remainActual)}</span>` : ''}</div>
+      ${remItems.length ? `<ul class="plain" style="font-size:14px">${remItems.map((i) => `<li>${i.year}년에 생긴 손실 중 <b>${won(i.remain)}</b> · ${i.lastYear ? `${i.lastYear}년 귀속까지 공제할 수 있습니다 ${i.lastYear - Y <= 1 ? '<span class="rc2 w">기한 임박</span>' : ''}` : '<span class="dim">사용 기한 규칙 확인 필요</span>'}</li>`).join('')}</ul>` : ''}
+      ${end.lostTotal ? `<div class="box warn" style="font-size:13.5px">기한이 지나 공제할 수 없게 된 금액이 ${won(end.lostTotal)} 있습니다.</div>` : ''}
+      ${rep != null ? `<div class="box ${rep === P.remainActual ? 'info' : 'warn'}" style="font-size:13.5px">${Y}년 신고서에 적은 잔액 ${won(rep)} ${rep === P.remainActual ? '→ 계산과 일치합니다.' : `→ 계산(${won(P.remainActual)})과 다릅니다. 입력값과 앞 해 신고를 확인하세요.`}</div>` : ''}
+      <h2 class="sec">② 남은 이월결손금 경정청구 방안</h2>
+      ${cards.length ? cards.join('') : '<div class="box info">입력한 값 기준으로 처리할 이월결손금이 없습니다. 입력값과 다른 공제 항목은 별도로 확인하세요.</div>'}
+      ${P.cands.length ? `<div class="box info" style="font-size:14px"><b>이미 세금을 냈다면</b><br>경정청구는 이미 낸 세금(추가 납부분 포함)의 환급을 신청하는 절차입니다. 공제가 늘면 줄어든 세액만큼 환급될 수 있습니다. 환급액은 홈택스에 명세서를 입력하면 자동 계산되므로 그 결과를 확인하세요. 지방소득세는 위택스에서 따로 경정청구합니다.${end.paid != null ? `<br><b>${Y}년에 낸 종합소득세 ${won(end.paid)}</b>는 환급 상한의 참고 값입니다. 실제 환급액은 이보다 적을 수 있습니다.` : '<br><small class="dim">낸 세금을 입력하면(3단계 최근 해) 환급 상한 참고 금액을 표시합니다.</small>'}</div>` : ''}
+      <div class="hint">참고용입니다. 청구와 이월 여부는 세무사 또는 세무서에 확인한 뒤 정하세요.</div>
+      <div class="row-btn">${nextBtn('최종 요약시트 →')}</div>
+    </div>`;
+  },
+  6() {
+    const P = planInfo(), Y = S.end;
+    if (!P.end || (P.plan === 'claim' && !P.claimYears.length)) return screens[5]();
+    const ic = {
+      list: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6 1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17M11 6.5h9M11 12.5h9M11 18.5h9"/></svg>',
+      warn: '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3z" fill="#92400e"/><path d="M12 10v5M12 17.5v.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+    };
+    const dots = (arr) => `<ul class="dots">${arr.map((t) => `<li>${t}</li>`).join('')}</ul>`;
+    let caution = `<div class="caution"><div class="st">${ic.warn}주의사항</div><p>실제 환급 여부와 금액은 공제 한도, 소득 종류, 다른 세액공제 항목, 국세청 결정에 따라 달라질 수 있습니다. 이 안내는 참고용이며 세무사 확인을 권장합니다.</p></div>`;
+    let next = nextBtn('요약 시트 보기 →');
+    const toItems = (yr) => yr.items.map((i) => ({ year: i.year, amount: i.amount, before: i.before, claimedCur: 0, proposedCur: i.cur, remainProposed: i.remain, remainActual: i.remain }));
+    let body, title, lead;
+    if (P.plan === 'claim') {
+      const cys = P.claimYears.map((y) => y.year), vy = claimViewYear(P), yr = P.claimYears.find((y) => y.year === vy), idx = cys.indexOf(vy), nextY = cys[idx + 1], prevY = cys[idx - 1];
+      const items = toItems(yr), t = ledgerTable(items, 'claim', yr.year); COPY['claim' + yr.year] = t.tsv;
+      const sumA = items.reduce((s, x) => s + x.amount, 0), sumB = items.reduce((s, x) => s + x.before, 0), lost = yr.items.reduce((s, x) => s + x.lost, 0);
+      const eq = sumA - sumB - yr.applied - lost, dl = claimDeadline(yr.year);
+      const used = yr.items.filter((i) => i.cur > 0).map((i) => i.year);
+      const between = idx === 0 && cys.length > 1 ? P.base.years.filter((y) => y.year > cys[0] && y.year < cys[cys.length - 1] && !cys.includes(y.year) && y.actual > 0).map((y) => y.year) : [];
+      title = `${yr.year}년 신고서 경정청구`;
+      lead = prevY != null ? `<b>${prevY}년 청구를 반영한 값</b>입니다. ${prevY}년을 먼저 제출했는지 확인하세요.`
+        : cys.length > 1 ? `${cys.length}개 해(${cys.join(' → ')}년) 중 첫 번째입니다. 오래된 해부터 하나씩 제출하세요.` : `${yr.year}년 신고서에 이월결손금 공제를 더하는 경우 홈택스에 입력할 값입니다.`;
+      const done = (S.claimDone || []).includes(yr.year);
+      const inc = yr.applied - yr.actual, usedItem = yr.items.find((v) => v.cur > 0) || yr.items[0];
+      const rowYears = (used.length ? used : yr.items.map((i) => i.year)).join('·');
+      const chip = (n, label) => `<button type="button" class="vchip" data-cv="${n}" title="눌러서 복사">${label != null ? label : fmt(n)}<i>복사</i></button>`;
+      const crumb = (arr) => `<div class="crumb">${arr.map((x, k) => `<span class="${k === arr.length - 1 ? 'last' : ''}">${x}</span>`).join('<i>›</i>')}</div>`;
+      const rowCards = yr.items.map((v, k) => `<div class="rowcard"><div class="rt">홈택스 입력 ${k + 1}번째 줄 <small>${v.year}년에 생긴 손실</small></div>
+          <table class="kv"><tbody>
+          <tr><th>소득구분</th><td>30 부동산임대업의 사업소득<br><span class="dim" style="font-size:12px">⑩ 표의 위쪽 묶음 "부동산임대업의 사업소득(주택임대업 제외)"에 입력합니다</span></td></tr>
+          <tr><th>① 발생과세기간</th><td>${chip(v.year, v.year)}</td></tr>
+          <tr><th>② 발생금액</th><td>${chip(v.amount)}</td></tr>
+          <tr><th>③ 전기까지의 공제액</th><td>${chip(v.before)}</td></tr>
+          <tr><th>④ 당기공제액</th><td>${chip(v.cur)}${v.cur > 0 ? ` <span class="rc2 g">${yr.year}년에 공제</span>` : ''}</td></tr>
+          <tr><th>⑤ 소급공제액</th><td><span class="dim">회색 칸입니다. 입력하지 않습니다</span></td></tr>
+          <tr><th>⑥ 그 밖의 공제액</th><td><span class="dim">비워 두세요 (해당 없음)</span></td></tr>
+          <tr><th>⑦ 잔액</th><td><span class="dim">자동 계산 → </span><b>${fmt(v.remain)}원</b>이면 정상입니다</td></tr>
+          ${v.lost ? `<tr><th>참고</th><td class="dim">기한이 지나 공제할 수 없게 된 금액이 ${fmt(v.lost)}원 있습니다. 이 줄의 입력 여부를 세무서에 확인하세요.</td></tr>` : ''}</tbody></table></div>`).join('');
+      const screenNote = '<p class="sm">2026년 11월 실제 화면 기준입니다. 홈택스 개편 시 이름이 달라질 수 있습니다.</p>';
+      const HX = [
+        { t: '시작 전 준비', h: `<p style="margin:0 0 8px;font-size:14px">${yr.year}년 신고서에 이월결손금 공제를 추가하는 <b>경정청구</b>를 홈택스 화면 순서대로 안내합니다. 홈택스 창을 옆에 열어 두고 같은 순서로 진행하세요.</p>
+          <div class="st2">이월결손금 명세서란?</div>
+          <p style="margin:0 0 6px;font-size:14px">손실이 난 해마다 <b>한 줄씩</b>, 그 손실의 사용 내역을 적는 표입니다.</p>
+          <ul class="dots"><li><b>발생과세기간</b> — 손실이 난 해</li><li><b>발생금액</b> — 그 해 생긴 손실 금액</li><li><b>전기까지의 공제액</b> — ${yr.year}년 <u>이전</u> 신고서에서 이미 뺀 금액의 합계</li><li><b>당기공제액</b> — <u>${yr.year}년 신고서에서 이번에 빼는</u> 금액(경정청구로 더하는 부분 포함)</li><li><b>잔액</b> — 발생금액 − 전기까지 − 당기. 홈택스가 자동 계산합니다</li></ul>
+          ${usedItem ? `<div class="quote" style="margin-top:8px;font-style:normal">예) ${usedItem.year}년에 생긴 손실 ${fmt(usedItem.amount)}원 중 ${fmt(usedItem.before)}원은 앞선 해에 이미 공제했고, ${yr.year}년 신고서에서 ${fmt(usedItem.cur)}원을 공제하면 ${fmt(usedItem.remain)}원이 남습니다.</div>` : ''}
+          <div class="st2" style="margin-top:14px">준비물</div>${dots(['공동·금융인증서 (로그인용)', `아래 <b>입력표</b> — 홈택스에 입력할 숫자 (복사 가능)`, `청구 기한: ${dl.label} ${deadlineChip(dl)}`])}
+          ${t.html}<div style="margin-top:10px">${copyBtn('claim' + yr.year)}</div>` },
+        { t: '홈택스에서 메뉴 선택', h: `<p style="margin:0 0 8px;font-size:14px">홈택스에 <b>공동·금융인증서로 로그인</b>한 뒤, 상단 메뉴 <b>세금신고</b>에서 아래 순서로 이동합니다.</p>
+          ${crumb(['홈택스', '세금신고', '종합소득세 신고', '종합소득세신고(모두채움·일반·근로·분리과세·종교인포함 및 중간예납·토지등매매차익)'])}
+          <p style="margin:10px 0 6px;font-size:14px">열린 화면에서 <b>"일반 신고"</b> 카드의 <b>경정청구</b> 버튼을 누릅니다. 누르면 <b>귀속년도 선택</b> 창이 열립니다.</p>
+          <div class="mock-card"><div class="mc-t">일반 신고 <i>∧</i></div><div class="mc-b"><span>정기신고</span><span>수정신고</span><span>기한 후 신고</span><span class="on">경정청구<em>여기를 누르세요</em></span><span>파일 변환신고<br>(회계프로그램)</span></div></div>
+          ${dots(['"수정신고" 버튼이 아니라 <b>"경정청구"</b> 버튼입니다. 수정신고는 세금을 늘리는 경우에 사용합니다.', '"모두채움 신고 / 단순경비율 신고" 카드나 "기한후 환급신고"가 아니라 <b>"일반 신고"</b> 카드를 사용합니다.'])}${screenNote}` },
+        { t: '귀속년도 선택', h: `<p style="margin:0 0 8px;font-size:14px"><b>경정청구</b> 버튼을 누르면 <b>"귀속년도 선택"</b> 창이 열립니다.</p>
+          <div class="mock-pop"><div class="mp-h">귀속년도 선택 <i>✕</i></div><div class="mp-b"><p>소득이 발생한 연도를 선택해 주세요.</p><div class="mp-sel"><b>${yr.year}</b> <i>▾</i><em>여기서 ${yr.year}년 선택</em></div></div><div class="mp-btn">적용하기<em>선택 후 누르세요</em></div></div>
+          ${dots([`"소득이 발생한 연도"는 경정청구할 <b>귀속연도</b>입니다. <b>${yr.year}</b>년을 선택하고 <b>적용하기</b>를 누릅니다.`, '적용하기를 누르면 신고서 <b>기본정보</b> 화면이 열립니다. 이 화면에는 신고구분을 고르는 칸이 없고, 앞에서 누른 <b>경정청구</b> 버튼으로 정해집니다.'])}` },
+        { t: '기본정보·신고서 불러오기', h: `<p style="margin:0 0 8px;font-size:14px"><b>기본정보</b> 화면 오른쪽 위의 <b>[신고서불러오기]</b> 버튼을 눌러 ${yr.year}년 종합소득세로 제출한 기존 신고서를 불러옵니다. <b>[새로작성하기]</b>가 아닙니다.</p>
+          <div class="mock-top"><span>신고안내 동영상</span><span>전자신고 매뉴얼</span><span>새로작성하기</span><span class="on">신고서불러오기<em>여기를 누르세요</em></span></div>
+          ${dots([`<b>소득발생년도</b>가 ${yr.year}인지 확인합니다.`, '같은 해에 신고가 여러 번 있었다면 <b>가장 마지막(최종) 신고서</b>를 불러옵니다.', '주민등록번호의 <b>[확인]</b> 버튼 등 나머지 기본정보는 불러온 값 <b>그대로 두고</b>, 화면 아래 <b>[작성완료]</b>를 눌러 다음으로 이동합니다. 이 도구는 개인정보를 묻지 않습니다.', '<b>[작성완료]</b>를 누르면 <b>"종합(분리)소득금액"</b> 화면이 열립니다. 불러온 <b>사업소득</b>과 <b>근로소득</b> 카드에 체크(✓)와 금액이 이미 표시되어 있습니다. 그대로 두고 삭제하지 않습니다.', '이번 청구는 <b>이월결손금 공제만</b> 다룹니다. 다른 항목(간주임대료, 세액공제 등)은 변경하지 않는 것을 권장합니다. 다른 숫자를 고치면 쟁점이 늘어 심사가 복잡해질 수 있습니다.'])}` },
+        { t: '이월결손금 명세서 입력', h: `<p style="margin:0 0 8px;font-size:14px">"종합(분리)소득금액" 화면 <b>왼쪽 요약 패널</b>에서 <b>"(이월)결손금"</b> 아래의 <b>"결손금·이월결손금공제명세서"</b> 링크를 누릅니다. 패널에 보이지 않으면 위쪽 <b>"전체항목 보기"</b> 스위치를 켭니다. 열린 <b>"(이월)결손금 및 세액감면·공제신청서 및 산출세액계산서"</b> 화면에서 <b>(이월)결손금</b> 묶음의 <b>[종합소득금액 및 결손금·이월결손금공제명세서]</b> 버튼을 누릅니다. 옆의 [결손금 소급공제세액 환급신청서]는 누르지 않습니다. 그러면 열리는 명세서 화면 맨 아래의 <b>⑩ "이월결손금 명세서"</b>에서 <b>"입력하기"</b>를 눌러 줄을 추가합니다. 위쪽 묶음 <b>"부동산임대업의 사업소득(주택임대업 제외)"</b>에 아래 <b>${yr.items.length}개 줄</b>을 입력하세요. 숫자는 눌러서 복사할 수 있습니다.</p>
+          ${dots(['⑩ 표 아래 입력 칸은 <b>소득구분</b>(30 부동산임대업의 사업소득) · <b>발생과세기간</b> · 이월결손금 <b>발생금액</b> · <b>전기까지의 공제액</b> · <b>당기공제액</b> · <b>그 밖의 공제액</b> 순서입니다. 소급공제액과 잔액은 입력하지 않고(회색 칸), 잔액은 자동 계산됩니다. 한 줄을 채우고 <b>[입력하기]</b>를 누르면 위 표에 줄이 추가됩니다.', '신고서에서 불러온 줄이 이미 있으면 새로 추가하지 말고 그 줄 오른쪽 <b>[수정]</b>으로 고칩니다. 같은 연도 줄이 두 번 생기지 않게 합니다. 잘못 넣은 줄은 <b>[삭제]</b>(✕)로 지웁니다.', '<b>"전년도 이월결손금 내역 불러오기"</b>(⑩ 제목 오른쪽 버튼)는 누르지 마세요. 이전 값이 입력될 수 있습니다.', '잔액이 0인 줄(전액 공제된 손실)도 발생금액과 전기까지 공제액을 함께 입력해야 자동 계산이 맞습니다. 잔액 0인 줄이 화면에서 자동으로 빠지면 그대로 두세요.'])}
+          ${rowCards}` },
+        { t: '위쪽 표에 합계 확인', h: `<p style="margin:0 0 6px;font-size:14px">화면 위쪽 <b>⑨ 종합소득금액 및 결손금·이월결손금공제명세서</b> 표에서 <b>"부동산임대업의 사업소득금액(주택임대업 제외)"</b> 줄의 <b>④ 칸</b>에 당기공제액 합계 ${chip(yr.applied)}이 입력되어 있어야 합니다.</p>
+          ${dots(['아래 명세서를 입력하면 자동으로 채워질 수 있습니다. 비어 있으면 직접 입력하세요. 표 아래에 "이월결손금 공제금액이 있는 경우에는 아래 이월결손금 명세서를 입력하세요"라는 안내가 있습니다.', '입력을 마치면 화면 맨 아래 <b>[작성완료]</b>를 눌러 다음으로 이동합니다.', '<b>⑤ 공제 후 소득금액</b>은 ① 소득금액에서 공제액을 뺀 값으로 자동 계산됩니다.'])}
+          ${illus('claimed')}<p class="sm"><b>③ 칸에는 입력하지 마세요.</b> ③은 부동산임대업 <u>외</u>의 사업소득용 칸이며, ④ 바로 옆에 있어 혼동하기 쉽습니다.</p>` },
+        { t: '세액 계산 화면 확인', h: `<p style="margin:0 0 8px;font-size:14px">명세서에서 <b>[작성완료]</b>를 누르면 <b>"납부(환급)할 세액"</b> 화면이 열립니다. 위쪽 <b>"신고기한이내 납부(환급)할 세액"</b>의 <b>종합소득세</b> 금액과 화면 <b>왼쪽 요약 패널</b>(종합소득금액·소득공제금액·세액공제·감면금액·가산세·기납부세액·환급할 세액)에서 입력이 맞게 반영됐는지 확인하세요. 종합소득세가 <b>마이너스(−)</b>이면 환급입니다.</p>
+          ${dots([`<b>종합소득금액이 ${fmt(inc)}원 줄었는지</b> 확인합니다(신고서에 이미 반영된 ${fmt(yr.actual)}원을 제외한 추가분).`, `각 줄의 <b>잔액</b>이 앞 화면 카드의 잔액과 같은지 확인합니다.`, `발생 − 전기까지 − 당기${lost ? ' − 소멸' : ''} = 잔액: ${fmt(sumA)} − ${fmt(sumB)} − ${fmt(yr.applied)}${lost ? ' − ' + fmt(lost) : ''} = <b>${fmt(eq)}</b> ${eq === yr.remainAfter ? '✓' : '(확인 필요)'}`, `당기공제 ${fmt(yr.applied)}원 ≤ ${yr.year}년 임대소득 ${fmt(yr.income)}원 ${yr.applied <= yr.income ? '✓' : '(확인 필요)'}`])}
+          <p class="sm">이 화면의 "환급할 세액"은 결정세액과 <b>기납부세액(원천징수)</b>의 차이만 보여 줍니다. 이미 낸 세금까지 합친 <b>환급받을 세액</b>은 경정청구서 미리보기에 표시됩니다(최초 납부할 세액 + 경정 환급액). 이 도구는 환급액을 계산하지 않습니다.</p>` },
+        { t: '환급계좌 입력', h: `<p style="margin:0 0 8px;font-size:14px">같은 <b>"납부(환급)할 세액"</b> 화면 맨 아래 <b>"나의 환급계좌"</b>에서 <b>은행</b>을 선택하고 <b>계좌번호</b>를 홈택스에서 직접 입력한 뒤 <b>[작성완료]</b>를 누릅니다.</p>
+          ${dots(['<b>본인 명의 계좌만</b> 가능합니다. 이 도구는 계좌번호를 묻지 않습니다.', '위쪽의 <b>추가 세액 입력</b>(추가납부세액, 농어촌특별세)과 <b>분납할 세액 입력</b>은 이번 청구에서 <b>0 그대로</b> 둡니다.', '환급액이 <b>500만 원을 넘으면</b> 환급계좌개설(변경)신고 안내가 표시될 수 있습니다. 이 경우 먼저 계좌를 등록하세요.'])}` },
+        { t: '경정청구서 미리보기·청구이유', h: `<p style="margin:0 0 8px;font-size:14px"><b>"경정청구 신고서"</b> 창에서 <b>신고내용</b>의 <b>결정(경정)청구이유</b>를 고르고, 표의 <b>최초신고 / 결정(경정)청구</b> 금액이 예상과 맞는지 확인합니다. 마치면 창 아래 <b>[입력완료]</b>를 누릅니다.</p>
+          ${dots(['표의 <b>최초신고</b> 칸(과세표준액·산출세액·공제 및 감면세액·납부할 세액 등)은 불러온 신고서의 금액입니다. <b>고치지 마세요.</b> 오른쪽 회색 <b>결정(경정)청구</b> 칸이 이월결손금 공제를 반영한 금액으로 자동 계산됩니다. 과세표준과 산출세액이 최초신고보다 줄었는지 확인합니다.', '법정신고일과 최초신고일은 자동으로 표시됩니다. 국세환급금계좌와 청구인 인적사항도 앞 화면 내용이 표시되며 이 창에서 따로 입력하지 않습니다.', '드롭다운에 이월결손금 전용 항목이 없어 <b>"수입금액 - 기타"</b>를 선택하고 아래 칸에 직접 입력합니다.', `문구 예시: <b>"부동산임대업 이월결손금 공제 누락(${rowYears}년 발생 손실 중 ${fmt(inc)}원 공제)"</b>`, '청구이유는 <b>한 칸만</b> 쓰세요. 두 칸에 같은 항목을 넣으면 "경정청구이유2는 1과 다른 이유를 입력해야 합니다" 오류가 발생합니다.', '세무대리인 칸은 직접 신고하면 비워 둡니다.'])}` },
+        { t: '제출', h: `<p style="margin:0 0 8px;font-size:14px">모두 확인했으면 <b>제출</b>하세요.</p>
+          ${dots(['제출 오류가 발생하면 "신고서 제출이 불가능합니다" 창에 서식명·항목명·사유가 표시됩니다. 내용대로 수정한 뒤 다시 제출하세요.', '제출이 끝나면 <b>접수증을 저장</b>하세요. 메뉴: 세금신고 &gt; 신고서 조회/삭제/부속서류 &gt; 전자신고 접수증·납부서 출력', '접수번호도 메모해 두세요.'])}` },
+        { t: '제출 후 할 일', h: `<div class="st2">증빙 서류 올리기</div>${crumb(['세금신고', '신고서 조회/삭제/부속서류', '신고부속서류 제출'])}
+          ${dots([`손실이 발생한 연도(${rowYears}년)의 종합소득세 신고서`, '앞선 수정신고·경정청구가 있었다면 그 결과 통지 내용', `${yr.year}년 종합소득세 신고서 (최종본)`])}
+          <div class="st2" style="margin-top:12px">그다음</div>${dots(['세무서는 청구를 받은 날부터 <b>2개월 이내</b>에 결정하거나 통지해야 합니다. 보완 요청이 오면 서류를 추가 제출하세요.', '<b>지방소득세</b> 경정청구는 따로 합니다. 홈택스 신고내역 조회(접수증·납부서) 화면의 <b>「지방소득세 신고이동」</b> 버튼을 누르면 위택스로 이동합니다.', nextY != null ? `<b>제출 완료</b>를 누르면 점검 결과로 돌아갑니다. 이어서 <b>${nextY}년</b> 청구를 진행하세요. ${nextY}년 표는 이 해 청구를 반영한 값입니다.` : (P.remainAfterClaims > 0 ? `남은 ${fmt(P.remainAfterClaims)}원은 ${Y + 1}년 귀속 신고에 이월합니다.` : '남은 이월결손금은 없습니다')])}
+          <details class="more"><summary>자주 하는 실수</summary>${dots(['이월결손금을 <b>③ 칸</b>이나 아래쪽 <b>"부동산임대업 외"</b> 묶음에 입력한다', '발생금액만 적고 <b>전기까지 공제액을 빠뜨려</b> 이중 공제가 된다', '"전년도 내역 불러오기"의 <b>옛 숫자</b>를 그대로 둔다', '<b>수정신고</b>를 고른다 (환급은 경정청구)', '앞선 경정청구가 <b>승인</b>됐는지 확인하지 않는다 (결과는 신고서보기가 아니라 환급금 상세조회·결정 통지서에서 확인)'])}</details>
+          ${between.length ? `<div class="box warn" style="font-size:13.5px;margin-top:12px">청구하는 해 사이의 <b>${between.join(', ')}년</b> 신고서는 이월결손금명세서의 숫자(전기까지 공제 등)가 달라질 수 있습니다. 청구 기한 안이면 정정할 수 있으며, 세액이 같아도 정정이 필요한지 세무서나 세무사에게 확인하세요.</div>` : ''}` },
+      ];
+      const last = HX.length - 1, hxI = Math.min((S.hx && S.hx[yr.year]) || 0, last);
+      body = `<div class="hxbar"><span>홈택스 화면 ${hxI + 1} / ${HX.length}</span><b>${HX[hxI].t}</b></div>
+        <div class="hxdots" role="tablist">${HX.map((s, i) => `<button type="button" class="hxd ${i === hxI ? 'cur' : i < hxI ? 'done' : ''}" data-hx="${i}" aria-label="${i + 1}. ${s.t}" title="${s.t}">${i + 1}</button>`).join('')}</div>
+        <div class="hxbody">${HX[hxI].h}</div>
+        <div class="row-btn">${hxI > 0 ? '<button type="button" class="btn ghost" id="hxPrev">← 이전 화면</button>' : ''}${hxI < last ? `<button type="button" class="btn primary" id="hxNext" title="${HX[hxI + 1].t}">다음 화면 →</button>` : '<button type="button" class="btn primary" id="hxDone">제출 완료</button>'}</div>`;
+      if (hxI < last) { caution = ''; }
+      next = hxI < last ? '<button type="button" class="btn ghost" id="backList" style="margin-top:10px">← 청구 후보로 돌아가기</button>' : '';
+    }
+    return `<div class="card">
+      <h1 style="font-size:22px"><span class="ic dark">${ic.list}</span>${title}</h1><p class="lead">${lead}</p>
+      ${body}${caution}${next}</div>`;
+  },
+  7() {
+    const P = planInfo(), Y = S.end, d = NOW;
+    const date = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+    const rows = inputRows();
+    const logo = document.getElementById('hBrand').innerHTML;
+    if (!P.end) return `<div class="card rpt"><h1>요약 시트</h1><div class="box warn">계산할 값이 부족합니다. 입력값을 확인해 주세요.</div></div>`;
+    // 제출완료한 청구만 반영해서 전체를 다시 계산한다 (미제출 청구는 표시·계산하지 않는다)
+    const done = S.claimDone || [];
+    const subSim = simulate(P.inputs, Y, new Set(P.claimYears.map((y) => y.year).filter((y) => done.includes(y))), S.claimAmt || {});
+    const subYears = subSim.years.filter((y) => y.isClaim);
+    const remainSub = subSim.last ? subSim.last.remainAfter : P.remainActual;
+    const byYear = {}; subSim.years.forEach((y) => { byYear[y.year] = y; });
+    const sumRows = rows.map((r) => {
+      const y = byYear[r.year];
+      if (!y) return `<tr class="unk"><td>${r.year}</td><td>${r.income == null ? '미입력' : fmt(r.income)}</td><td>${r.claimed == null ? '-' : fmt(r.claimed)}</td><td>-</td><td>-</td><td>점검 불가</td></tr>`;
+      const add = y.isClaim ? y.applied - y.actual : 0;
+      return `<tr class="${add ? 'wrow' : ''}"><td>${y.year}${y.isClaim ? ' <span class="rc2 g">경정청구</span>' : ''}</td><td class="${y.income < 0 ? 'neg' : ''}">${fmt(y.income)}</td><td>${fmt(y.actual)}</td><td>${add ? '+' + fmt(add) : '-'}</td><td>${fmt(y.applied)}</td><td><b>${fmt(y.remainAfter)}</b></td></tr>`;
+    }).join('');
+    const tot = subSim.years.reduce((s, y) => ({ a: s.a + y.actual, add: s.add + (y.isClaim ? y.applied - y.actual : 0), f: s.f + y.applied }), { a: 0, add: 0, f: 0 });
+    let planTbl = `<h2 class="sec">연도별 이월결손금 요약</h2>
+      <div class="tablewrap" style="margin:0"><table class="t grid"><thead><tr><th>연도</th><th>임대소득</th><th>신고서 공제액</th><th>경정청구액</th><th>최종 공제액</th><th>남은 이월결손금</th></tr></thead><tbody>${sumRows}
+        <tr class="tot"><td>합계</td><td></td><td>${fmt(tot.a)}</td><td>${tot.add ? '+' + fmt(tot.add) : '-'}</td><td>${fmt(tot.f)}</td><td></td></tr></tbody></table></div>
+      <div class="note-i">* 단위: 원. <b>제출을 마친 경정청구만</b> 반영했으며, 제출하지 않은 청구는 포함하지 않았습니다. 남은 이월결손금 = 발생한 손실 합계 − 최종 공제액 합계(기한이 지나 공제할 수 없게 된 금액 제외).${P.end.paid != null ? ` ${Y}년에 낸 종합소득세(입력): ${fmt(P.end.paid)}원.` : ''}</div>`;
+    planTbl += subYears.length ? subYears.map((yr) => {
+      const items = yr.items.map((i) => ({ year: i.year, amount: i.amount, before: i.before, claimedCur: 0, proposedCur: i.cur, remainProposed: i.remain, remainActual: i.remain }));
+      const t = ledgerTable(items, 'claim', yr.year); COPY['claim' + yr.year] = t.tsv; const dl = claimDeadline(yr.year);
+      return `<h2 class="sec">${yr.year}년 경정청구한 이월결손금명세서</h2>${t.html}<div style="margin-top:8px">${copyBtn('claim' + yr.year)}</div><div class="note-i">당기공제액 합계 ${fmt(yr.applied)}원 (신고서 ${fmt(yr.actual)}원 → ${fmt(yr.applied - yr.actual)}원 더 공제) · 청구 기한 ${dl.label}</div>`;
+    }).join('') : '<div class="rcard" style="margin-top:14px"><b>경정청구를 마친 해가 아직 없습니다</b><p>홈택스 따라하기 마지막 화면에서 "제출 완료"를 누르면 위 표에 반영됩니다.</p></div>';
+    if (P.priorWarn.length) planTbl += `<h2 class="sec">세무사에게 확인할 것</h2>${P.priorWarn.map((w) => `<div class="rcard warn"><b>${w.year}년</b><p>${esc(w.msg)}${w.detail ? ` (${esc(w.detail)})` : ''}</p></div>`).join('')}`;
+    return `<div class="card rpt">
+      <div class="report-head"><div><h1>이월결손금 최종 요약시트</h1><div style="color:var(--sub)">작성일: ${date}${S.mode === 'demo' ? ' · 가상 시나리오' : ''}</div></div>
+      <div style="text-align:right"><span class="logo-wrap">${logo}</span><div class="brand-sub">Carried-Forward Loss Checker</div></div></div>
+      <div class="kpis"><div class="kpi"><small>점검 기간</small><b>${S.start}년 ~ ${Y}년</b></div>
+        <div class="kpi"><small>신고서 기준 남은 이월결손금</small><b>${fmt(P.remainActual)}원</b></div>
+        <div class="kpi"><small>경정청구 반영 후 남는 이월결손금</small><b>${fmt(remainSub)}원</b></div></div>
+      ${P.end.items.length ? '' : '<div class="rcard"><b>이월결손금이 없습니다</b></div>'}
+      ${planTbl}
+      <div class="rfoot"><p>본 시트는 세무 상담을 돕기 위한 참고용 자료입니다. 청구 가능 여부와 세액은 관련 세법 및 사실관계에 따라 달라질 수 있으므로, 반드시 세무 전문가의 검토를 거치시기 바랍니다.</p>
+        <div class="noprint linkrow" style="border:0;margin:14px 0 0;padding:0"><button class="link" id="restart">처음으로 돌아가기</button></div></div>
+    </div>`;
+  },
+};
+
+/* ---------- 화면별 부가 ---------- */
+function illus(hi) {
+  const hlc = (txt) => `<td class="hl">${txt}<span class="tag here">여기 값</span></td>`;
+  const body = hi === 'balance'
+    ? `<div class="fi-t">⑩ 이월결손금명세서 (가상)</div><div class="fi-s"><table class="fi"><thead><tr><th>구분</th><th>① 발생과세기간</th><th>② 발생금액</th><th>③ 전기까지 공제액</th><th>④ 당기 공제액</th><th>⑤ 소급공제액</th><th>⑥ 그 밖의 공제</th><th>⑦ 잔액</th></tr></thead><tbody>
+        <tr><th class="grp on">부동산임대업의 사업소득(주택임대업 제외)</th><td>2019</td><td>0,000,000</td><td>0</td><td>0,000,000</td><td class="gry"></td><td>0</td>${hlc('0,000,000')}</tr>
+        <tr><th class="grp">부동산임대업 외의 사업소득(주택임대업 포함)</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`
+    : `<div class="fi-t">⑨ 종합소득금액 및 결손금·이월결손금공제명세서 (가상)</div><div class="fi-s"><table class="fi"><thead><tr><th>구분</th><th>① 소득별 소득금액</th><th>② 임대업 외 결손금 공제금액</th><th>③ 임대업 외 이월결손금 공제금액</th><th>④ 임대업(주택 제외) 이월결손금 공제금액</th><th>⑤ 공제 후 소득금액</th></tr></thead><tbody>
+        <tr><th class="grp on">부동산임대업의 사업소득금액(주택임대업 제외)</th>${hi === 'income' ? hlc('0,000,000') : '<td>0,000,000</td>'}<td></td><td>0</td>${hi === 'income' ? '<td class="hl2">0,000,000</td>' : hlc('0,000,000')}<td>0</td></tr>
+        <tr><th class="grp">부동산임대업 외의 사업소득금액(주택임대업 포함)</th><td>0</td><td class="gry"></td><td>0</td><td class="gry"></td><td>0</td></tr>
+        <tr><th class="grp">근로소득금액</th><td>0,000,000</td><td></td><td>0</td><td class="gry"></td><td>0,000,000</td></tr></tbody></table></div>`;
+  return `<div class="form-ill" role="img" aria-label="신고서 표 그림 (가상)">${body}</div><div class="fake-note">실제 신고서의 ⑨·⑩ 표를 단순화한 가상 그림입니다. 회색 칸은 입력하지 않으며, 칸 번호(①~⑦)로 찾으세요.</div>`;
+}
+
+/* ---------- 렌더 & 이벤트 ---------- */
+function updateHeader() {
+  const L = document.getElementById('stepLabel'), R = document.getElementById('hRight');
+  document.getElementById('hBack').style.display = S.step === 0 ? 'none' : '';
+  document.getElementById('hBrand').style.display = S.step === 0 ? '' : 'none';
+  if (S.step === 0) L.innerHTML = '';
+  else if (S.step === 7) L.innerHTML = `<b>최종 단계 (${TOTAL_STEPS}/${TOTAL_STEPS})</b>`;
+  else if (S.step === 3) { const ys = yearsList(); L.innerHTML = `<small>${ys.length}개 연도 중 ${S.yIdx + 1}번째</small><b class="dk">${ys[S.yIdx]}년도 데이터 입력</b>`; }
+  else if (S.step === 6 && planInfo().plan === 'claim') { const P = planInfo(), ys = P.claimYears.map((y) => y.year), vy = claimViewYear(P); L.innerHTML = `<small>${ys.indexOf(vy) + 1}/${ys.length}번째 청구 · 단계 ${stepNo(S.step)} / ${TOTAL_STEPS}</small><b class="dk">${vy}년 경정청구</b>`; }
+  else L.innerHTML = `<b>단계 ${stepNo(S.step)} / ${TOTAL_STEPS}</b>`;
+  R.innerHTML = S.step === 0 ? '' :(S.step === 3 && S.mode === 'demo') ? '<span class="demo-chip">가상 예시</span>' : S.step === 7 ? '<button type="button" class="hbtn" id="hPrint">🖨 인쇄 / PDF 저장</button>' : '';
+  const pr = document.getElementById('hPrint'); if (pr) pr.onclick = () => window.print();
+}
+document.getElementById('hBack').addEventListener('click', () => goBack());
+function render() {
+  $app.innerHTML = screens[S.step]();
+  updateHeader();
+  $app.style.maxWidth = S.step === 5 ? '920px' : S.step === 7 ? '760px' : '600px';
+  const fl = document.getElementById('discTxt'); if (fl) fl.style.display = S.step === 7 ? 'none' : '';
+  document.getElementById('barFill').style.width = (progress() * 100).toFixed(1) + '%';
+  document.title = `${STEP_TITLES[S.step]} | 환급 점검 - 장부선생`;
+  const h = $app.querySelector('h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+  bind();
+}
+const $q = (s) => $app.querySelector(s);
+function bind() {
+  const on = (sel, fn) => { const el = $q(sel); if (el) el.addEventListener('click', fn); };
+  on('#back', goBack);
+  const step = S.step;
+  if (step === 0) {
+    on('#mine', () => { S.mode = 'mine'; S.start = THIS_TAX_YEAR - 5; S.end = THIS_TAX_YEAR; S.data = {}; S.yIdx = 0; go(1); });
+    on('#demo', () => { S.mode = 'demo'; S.start = DEMO[0].year; S.end = DEMO[DEMO.length - 1].year; S.data = {}; DEMO.forEach((r) => (S.data[r.year] = { income: r.income, claimed: r.claimed, balance: r.balance })); S.yIdx = 0; go(1); });
+  }
+  if (step === 1) {
+    const nx = $q('#next'), er = $q('#yearErr');
+    on('#toMine', () => { S.mode = 'mine'; S.start = THIS_TAX_YEAR - 5; S.end = THIS_TAX_YEAR; S.data = {}; S.yIdx = 0; go(1); });
+    const ss = $q('#selStart'), se = $q('#selEnd');
+    if (!ss) { nx.addEventListener('click', () => { S.yIdx = 0; go(2); }); return; }
+    const chk = () => { const a = +ss.value, b = +se.value; const bad = a > b; er.textContent = bad ? '시작 연도가 종료 연도보다 늦을 수 없습니다.' : ''; nx.disabled = bad; if (!bad && S.mode !== 'demo') { S.start = a; S.end = b; } };
+    ss.addEventListener('change', chk); se.addEventListener('change', chk); chk();
+    nx.addEventListener('click', () => { S.yIdx = 0; go(2); });
+  }
+  if (step === 2) {
+    const nx = $q('#next'); const upd = () => (nx.disabled = !S.checks.every(Boolean));
+    $app.querySelectorAll('[data-c]').forEach((c) => c.addEventListener('change', () => { S.checks[+c.dataset.c] = c.checked; upd(); }));
+    upd(); nx.addEventListener('click', () => { S.yIdx = 0; go(3); });
+  }
+  if (step === 3) {
+    const ys = yearsList(), y = ys[S.yIdx], d = S.data[y], demo = S.mode === 'demo', nx = $q('#next');
+    const upd = () => { nx.disabled = !(demo || d.unknown || d.income != null); };
+    $app.querySelectorAll('input[data-k]').forEach((inp) => {
+      const k = inp.dataset.k, hint = $q('#h_' + k);
+      inp.addEventListener('input', () => {
+        const v = parseAmt(inp.value); d[k] = v; if (v != null) d.unknown = false;
+        hint.textContent = v == null ? FIELDS[k].hint : kr(v); hint.className = 'hint' + (v != null && v < 0 ? ' neg' : '');
+        upd();
+      });
+      inp.addEventListener('blur', () => { const v = parseAmt(inp.value); inp.value = v == null ? '' : fmt(v); });
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !nx.disabled) nx.click(); });
+      if (d[k] != null) hint.textContent = kr(d[k]);
+    });
+    $app.querySelectorAll('[data-where]').forEach((b) => b.addEventListener('click', () => { const w = $q('#w_' + b.dataset.where); w.hidden = !w.hidden; b.setAttribute('aria-expanded', String(!w.hidden)); }));
+    upd();
+    nx.addEventListener('click', () => { if (S.yIdx < ys.length - 1) { S.yIdx++; render(); window.scrollTo(0, 0); } else go(4); });
+    on('#unknown', () => { d.unknown = !d.unknown; if (d.unknown) { d.income = null; } render(); });
+  }
+  if (step === 4) {
+    on('#next', () => go(5));
+    on('#fix', () => { S.yIdx = 0; go(3); });
+    $app.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => { S.yIdx = +b.dataset.edit; go(3); }));
+  }
+  const bindCopy = () => $app.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', () => copyText(COPY[b.dataset.copy] || '', b)));
+  if (step === 5) {
+    on('#next', () => go(7)); on('#fix', () => { S.yIdx = 0; go(3); });
+    const commitAmt = (y, raw) => { const v = parseAmt(raw); S.claimAmt = Object.assign({}, S.claimAmt, { [y]: v == null || v <= 0 ? '' : v }); return v; };
+    $app.querySelectorAll('[data-claim]').forEach((b) => {
+      b.addEventListener('mousedown', (e) => e.preventDefault());   // 금액 칸의 포커스를 유지해 클릭이 사라지지 않게
+      b.addEventListener('click', () => {
+        const y = +b.dataset.claim, inp = b.closest('tr').querySelector('[data-amt]');
+        if (inp) commitAmt(y, inp.value);
+        if (S.claimAmt && S.claimAmt[y] === '') return;
+        S.plan = 'claim'; S.claimView = y; go(6);
+      });
+    });
+    $app.querySelectorAll('[data-amt]').forEach((inp) => {
+      inp.addEventListener('focus', () => inp.select());
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
+      inp.addEventListener('input', () => { const b = inp.closest('tr').querySelector('[data-claim]'); const v = parseAmt(inp.value); if (b) b.disabled = v == null || v <= 0; });
+      inp.addEventListener('change', () => {
+        const y = +inp.dataset.amt, P0 = planInfo(), yr = P0.selSim.years.find((z) => z.year === y);
+        const v = commitAmt(y, inp.value); S.amtMsg = undefined;
+        if (yr && v != null && v > 0) { if (v > yr.possible) S.amtMsg = { year: y, text: '최대 금액까지만 입력할 수 있습니다' }; else if (v < yr.actual) S.amtMsg = { year: y, text: '신고서 반영 금액보다 적게 입력할 수 없습니다' }; }
+        const sy = window.scrollY; render(); window.scrollTo(0, sy);
+      });
+    });
+  }
+  if (step === 6) {
+    bindCopy();
+    $app.querySelectorAll('[data-cv]').forEach((b) => b.addEventListener('click', () => copyText(b.dataset.cv, b)));
+    const P6 = planInfo();
+    if (P6.plan === 'claim') {
+      const cys = P6.claimYears.map((y) => y.year), vy = claimViewYear(P6), nextY = cys[cys.indexOf(vy) + 1];
+      on('#next', () => { if (nextY != null) { S.claimView = nextY; render(); window.scrollTo(0, 0); } else go(7); });
+      on('#backList', () => go(5));
+      const hxGo = (d) => { S.hx = Object.assign({}, S.hx, { [vy]: Math.max(0, ((S.hx && S.hx[vy]) || 0) + d) }); render(); window.scrollTo(0, 0); };
+      on('#hxPrev', () => hxGo(-1)); on('#hxNext', () => hxGo(1));
+      on('#hxDone', () => { S.claimDone = [...new Set([...(S.claimDone || []), vy])]; go(5); });
+      $app.querySelectorAll('[data-hx]').forEach((b) => b.addEventListener('click', () => { S.hx = Object.assign({}, S.hx, { [vy]: +b.dataset.hx }); render(); window.scrollTo(0, 0); }));
+      const dt = $q('#doneToggle'); if (dt) dt.addEventListener('change', () => { const set = new Set(S.claimDone || []); if (dt.checked) set.add(vy); else set.delete(vy); S.claimDone = [...set]; });
+    } else on('#next', () => go(7));
+  }
+  if (step === 7) {
+    on('#restart', () => { Object.assign(S, { step: 0, mode: null, yIdx: 0, data: {}, checks: [false, false, false], plan: undefined }); render(); });
+    bindCopy();
+  }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && S.step !== 3 && !/^(BUTTON|SELECT|INPUT|A|SUMMARY)$/.test(document.activeElement.tagName)) { const n = document.getElementById('next'); if (n && !n.disabled) n.click(); }
+});
+
+/* ---------- 이월결손금 처리 기한 안내 (기준 확인 필요 알약) ---------- */
+function ruleHtml() {
+  const rows = RULES.carryYears.map((r) => {
+    const span = r.toYear ? `${r.fromYear}~${r.toYear}년 발생분` : `${r.fromYear}년 이후 발생분`;
+    const ex = r.toYear ? `${r.fromYear}년분 → ${r.fromYear + r.years}년 귀속까지<br>${r.toYear}년분 → ${r.toYear + r.years}년 귀속까지` : `2021년분 → ${2021 + r.years}년 귀속까지<br>2022년분 → ${2022 + r.years}년 귀속까지`;
+    const st = r.years === 15 ? '<span class="st ok">조문 확인</span><br><small>적용 시작 시점은 부칙 확인 필요</small>' : '<span class="st pend">2차 자료만</span><br><small>조문·부칙 직접 확인 전</small>';
+    return `<tr><td>${span}</td><td><b>${r.years}년</b></td><td>${ex}</td><td>${st}</td></tr>`;
+  }).join('');
+  return `<p>발생한 손실(이월결손금)은 <b>발생한 과세기간 종료일부터 N년 이내에 끝나는 과세기간</b>까지만 공제할 수 있고, <b>오래된 것부터</b> 순서대로 <b>부동산임대업 소득</b>에서만 뺍니다.</p>
+    <table><thead><tr><th>발생 시기</th><th>공제 기한</th><th>예시</th><th>확인 상태</th></tr></thead><tbody>${rows}</tbody></table>
+    <b>함께 알아 둘 것</b>
+    <ul><li><b>추계신고를 한 해</b>에는 이월결손금 공제가 적용되지 않습니다.</li>
+    <li>국세부과 <b>제척기간이 지난 뒤</b> 확인된 이월결손금은 공제하지 않습니다.</li>
+    <li>2018년 이전 발생분의 기한은 이 도구에서 계산하지 않습니다(2차 자료상 2009년분부터 10년으로 알려져 있으나 미확인).</li></ul>
+    <div class="box warn" style="margin:12px 0 0;font-size:13px">법령 원문 중 개정 부칙은 아직 직접 확인하지 못했습니다. 청구나 신고 전에 세무사에게 확인하세요.</div>
+    <div class="src">근거: 소득세법 제45조 제2~4항 · 확인일 2026-11-03 · <a href="https://casenote.kr/%EB%B2%95%EB%A0%B9/%EC%86%8C%EB%93%9D%EC%84%B8%EB%B2%95/%EC%A0%9C45%EC%A1%B0" target="_blank" rel="noopener">조문 보기</a></div>`;
+}
+function openRule() {
+  let d = document.getElementById('ruleDlg');
+  if (!d) {
+    d = document.createElement('dialog'); d.id = 'ruleDlg'; d.className = 'rule';
+    d.innerHTML = '<div class="rh"><h2>이월결손금 처리 기한</h2><button type="button" class="x" aria-label="닫기">×</button></div><div class="rb"></div>';
+    d.querySelector('.x').addEventListener('click', () => d.close());
+    d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+    document.body.appendChild(d);
+  }
+  d.querySelector('.rb').innerHTML = ruleHtml();
+  d.showModal();
+}
+document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('[data-rule]')) openRule(); });
+render();
+</script>
+</body>
+</html>
