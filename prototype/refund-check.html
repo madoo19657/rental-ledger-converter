@@ -119,6 +119,18 @@ table.t.grid tr.wrow td{background:#fffaeb}table.t.grid .wred{color:var(--err);f
 .note-i{font-size:11px;color:var(--sub);font-style:italic;margin:8px 0 0}
 .rfoot{border-top:1px solid var(--line);margin-top:44px;padding-top:26px;text-align:center}.rfoot p{margin:0;font-size:11.5px;color:var(--sub);max-width:520px;margin-inline:auto}
 .tagbtn{border:0;cursor:pointer;font-family:inherit}.tagbtn:hover{background:#d5dbe2}
+@media(max-width:640px){
+  .tablewrap:has(table.cand){overflow:visible}
+  table.t.cand,table.t.cand tbody,table.t.cand tr,table.t.cand td{display:block;width:100%}
+  table.t.cand thead{display:none}
+  table.t.cand tr{border:1px solid var(--line);border-radius:12px;padding:6px 14px 12px;margin:0 0 10px;background:#fff}
+  table.t.cand td{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0;border:0;text-align:right}
+  table.t.cand td[data-label]::before{content:attr(data-label);color:var(--sub);font-weight:500;font-size:13px;text-align:left;flex:none}
+  table.t.cand td:nth-child(2){font-weight:800;color:var(--navy)}
+  table.t.cand td.cur{align-items:center}
+  table.t.cand td.cd{padding-top:8px}table.t.cand td.cd .rowbtn{width:100%;padding:12px}
+  .amt{width:140px}
+}
 dialog.rule{border:0;border-radius:18px;padding:0;max-width:560px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(16,24,40,.25);color:var(--ink)}
 dialog.err{max-width:420px}.rule.err .em{margin:0 0 14px;font-size:15px;line-height:1.7}.rule.err .rh h2{color:#b42318}
 dialog.rule::backdrop{background:rgba(15,23,42,.45)}
@@ -610,7 +622,7 @@ const screens = {
       const isDone = (S.claimDone || []).includes(c.year);
       const val = yr && yr.isClaim && yr.applied > yr.actual ? fmt(yr.applied - yr.actual) : '';
       const amt = past ? '<span class="dim">-</span>' : `<div class="amtbox"><input class="amt" type="text" inputmode="numeric" data-amt="${c.year}" value="${val}" placeholder="0" aria-label="${c.year}년 공제금액 입력"><span>원</span></div>${S.amtMsg && S.amtMsg.year === c.year ? `<small><b class="bad">${S.amtMsg.text}</b></small>` : ''}`;
-      return `<tr class="${past ? 'unk' : ''}"><td class="ck"><span class="rc2 ${isDone ? 'g' : 'n'}">${isDone ? '제출완료' : '미제출'}</span></td><td>${c.year}</td><td>${fmt(c.income)}</td><td>${fmt(c.actual)}</td><td class="mx">${fmt(Math.max(0, c.income - c.actual))}</td><td class="cur">${amt}</td><td class="cd">${past ? '<span class="dim">기한 지남</span>' : `<button type="button" class="rowbtn" data-claim="${c.year}" ${val ? '' : 'disabled'}>${isDone ? '다시 보기' : '청구하기'}</button>`}</td></tr>`; }).join('');
+      return `<tr class="${past ? 'unk' : ''}"><td class="ck" data-label="제출상태"><span class="rc2 ${isDone ? 'g' : 'n'}">${isDone ? '제출완료' : '미제출'}</span></td><td data-label="연도">${c.year}</td><td data-label="임대소득">${fmt(c.income)}</td><td data-label="신고서 공제">${fmt(c.actual)}</td><td class="mx" data-label="공제가능금액">${fmt(Math.max(0, c.income - c.actual))}</td><td class="cur" data-label="공제할 이월결손금">${amt}</td><td class="cd">${past ? '<span class="dim">기한 지남</span>' : `<button type="button" class="rowbtn" data-claim="${c.year}" ${val ? '' : 'disabled'}>${isDone ? '다시 보기' : '청구하기'}</button>`}</td></tr>`; }).join('');
     const incr = P.selSim.years.filter((y) => y.isClaim).reduce((s, y) => s + y.applied - y.actual, 0);
     const maxSum = P.selSim.years.filter((y) => y.isClaim).reduce((s, y) => s + y.applied, 0);
     const cy = P.act;
