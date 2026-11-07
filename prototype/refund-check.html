@@ -826,8 +826,7 @@ function updateHeader() {
   else if (S.step === 3) { const ys = yearsList(); L.innerHTML = `<small>${ys.length}개 연도 중 ${S.yIdx + 1}번째</small><b class="dk">${ys[S.yIdx]}년도 데이터 입력</b>`; }
   else if (S.step === 6 && planInfo().plan === 'claim') { const P = planInfo(), ys = P.claimYears.map((y) => y.year), vy = claimViewYear(P); L.innerHTML = `<small>${ys.indexOf(vy) + 1}/${ys.length}번째 청구 · 단계 ${stepNo(S.step)} / ${TOTAL_STEPS}</small><b class="dk">${vy}년 경정청구</b>`; }
   else L.innerHTML = `<b>단계 ${stepNo(S.step)} / ${TOTAL_STEPS}</b>`;
-  R.innerHTML = S.step === 0 ? '' :(S.step === 3 && S.mode === 'demo') ? '<span class="demo-chip">가상 예시</span>' : S.step === 7 ? '<button type="button" class="hbtn" id="hPrint">🖨 인쇄 / PDF 저장</button>' : '';
-  const pr = document.getElementById('hPrint'); if (pr) pr.onclick = () => window.print();
+  R.innerHTML = S.step === 0 ? '' :(S.step === 3 && S.mode === 'demo') ? '<span class="demo-chip">가상 예시</span>' : '';
 }
 document.getElementById('hBack').addEventListener('click', () => goBack());
 // 좁은 화면에서 표를 카드로 보여 줄 때 쓸 칸 이름을 각 칸에 붙인다
