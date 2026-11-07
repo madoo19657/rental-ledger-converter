@@ -20,6 +20,7 @@ fs.copyFileSync(path.join(root, 'dist-public/index.html'), path.join(root, 'serv
 fs.cpSync(path.join(root, 'dist-public/legal'), path.join(root, 'server/public/legal'), { recursive: true });
 // 이월결손금 환급점검(단일 HTML 프로토타입)은 /refund/ 에서 열린다. 이용약관 링크는 같은 사이트의 /legal/ 을 가리키게 바꾼다.
 fs.mkdirSync(path.join(root, 'server/public/refund'), { recursive: true });
+fs.copyFileSync(path.join(root, 'og-image.png'), path.join(root, 'server/public/refund/og-image.png')); // 카카오톡·메신저 링크 미리보기 이미지
 fs.writeFileSync(path.join(root, 'server/public/refund/index.html'), fs.readFileSync(path.join(root, 'prototype/refund-check.html'), 'utf8').split('../dist-public/legal/').join('/legal/'));
 fs.writeFileSync(path.join(root, 'server/public/_headers'), '/*\n  Cache-Control: no-cache\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n');
 run('npx', ['wrangler', 'deploy'], { cwd: path.join(root, 'server') });
