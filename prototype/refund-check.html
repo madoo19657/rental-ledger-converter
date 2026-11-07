@@ -768,7 +768,7 @@ const screens = {
       <div style="text-align:right"><span class="logo-wrap">${logo}</span><div class="brand-sub">Carried-Forward Loss Checker</div></div></div>
       <div class="kpis"><div class="kpi"><small>점검 기간</small><b>${S.start}년 ~ ${Y}년</b></div>
         <div class="kpi"><small>신고서 기준 남은 이월결손금</small><b>${fmt(P.remainActual)}원</b></div>
-        <div class="kpi"><small>경정청구 반영 후 남는 이월결손금</small><b>${fmt(remainSub)}원</b></div></div>
+        <div class="kpi"><small>경정청구 후 남는 이월결손금</small><b>${fmt(remainSub)}원</b></div></div>
       ${P.end.items.length ? '' : '<div class="rcard"><b>이월결손금이 없습니다</b></div>'}
       ${planTbl}
       <div class="rfoot"><p>본 시트는 세무 상담을 돕기 위한 참고용 자료입니다. 청구 가능 여부와 세액은 관련 세법 및 사실관계에 따라 달라질 수 있으므로, 반드시 세무 전문가의 검토를 거치시기 바랍니다.</p>
