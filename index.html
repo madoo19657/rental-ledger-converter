@@ -196,6 +196,21 @@ table.t.cand td.cd{white-space:nowrap}table.t.cand td.cd small{display:block;col
 .rowbtn{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}.rowbtn:hover:not(:disabled){background:var(--brand-d)}.rowbtn:disabled{background:#d5dbe2;color:#6b7684;cursor:not-allowed}
 .amtbox{display:flex;align-items:center;gap:4px;justify-content:flex-end}.amt{width:108px;border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;text-align:right;font:inherit;font-weight:700;color:var(--brand-d);background:#fff}.amt::placeholder{color:#b4bcc7;font-weight:400}.amt:focus{outline:0;border-color:var(--brand)}
 table.t.cand td.cur small{display:block;color:var(--sub);font-size:11px;text-align:right;margin-top:2px}.bad{color:var(--err)}
+/* 경정청구 후보 표: 헤더·숫자·핵심 금액(공제가능금액)·입력칸 위계 */
+table.t.cand{font-variant-numeric:tabular-nums}
+table.t.cand td.mx{font-weight:800;color:var(--brand-d)}
+@media(min-width:641px){
+  table.t.cand{font-size:14.5px}
+  table.t.cand thead th{background:#f3f6f8;color:#374151;font-size:13px;font-weight:700;padding:12px 8px;border-top:1px solid var(--line);border-bottom:1.5px solid #cdd5dd}
+  table.t.cand thead th:nth-child(5),table.t.cand thead th:nth-child(6){background:var(--brand-bg);color:var(--brand-d)}
+  table.t.cand td{padding:14px 8px}
+  table.t.cand td:nth-child(2){font-size:16px}
+  table.t.cand td:nth-child(3),table.t.cand td:nth-child(4){color:#4b5563;font-weight:500}
+  table.t.cand td.mx{font-size:16px;background:#f4fbf9}
+  table.t.cand .amt{width:132px;font-size:15.5px;padding:9px 10px;border-color:#b7e1dc}
+  table.t.cand .amt::placeholder{color:#9aa5b1}
+  table.t.cand .rowbtn{padding:9px 14px;font-size:13.5px}
+}
 .rowcard{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;background:#fff}
 .rowcard .rt{font-weight:800;color:var(--navy);margin-bottom:6px}.rowcard .rt small{font-weight:500;color:var(--sub);margin-left:6px}
 table.kv{width:100%;border-collapse:collapse;font-size:13.5px}table.kv th{width:38%;text-align:left;color:var(--sub);font-weight:600;padding:7px 6px 7px 0;vertical-align:top}table.kv td{padding:6px 0;border-top:1px solid #f0f2f4}table.kv tr:first-child td,table.kv tr:first-child th{border-top:0}
@@ -651,15 +666,16 @@ const screens = {
     const cy = P.act;
     const mid = cy.length > 1 ? P.base.years.filter((y) => y.year > Math.min(...cy) && y.year < Math.max(...cy) && !cy.includes(y.year) && y.actual > 0).map((y) => y.year) : [];
     const opt = (key, title, body, extra) => `<div class="optcard"><div class="oh">${title}</div>${body}${extra || ''}</div>`;
-    const cards = []; let letter = 0; const L = () => String.fromCharCode(65 + letter++);
-    if (P.cands.length) cards.push(opt('claim', `${L()}. 공제가 덜 반영된 해, 경정청구로 확인`,
+    const cards = []; let letter = 0; const multi = (P.cands.length ? 1 : 0) + (P.priorWarn.length ? 1 : 0) > 1;
+    const L = () => (multi ? `${String.fromCharCode(65 + letter++)}. ` : '');
+    if (P.cands.length) cards.push(opt('claim', `${L()}공제가 덜 반영된 해`,
       `<p>아래 해는 공제할 수 있는 금액이 신고서보다 많습니다. 청구할 해의 <b>공제금액을 입력</b>하세요. 금액을 입력한 해만 청구 대상이 됩니다. 이월결손금은 한 번만 공제할 수 있으며, 오래된 해부터 차례로 사용합니다.</p>
         <div class="tablewrap" style="margin:8px 0 0"><table class="t cand"><thead><tr><th>제출상태</th><th>연도</th><th>임대소득</th><th>신고서 공제</th><th>공제가능금액</th><th>공제할 이월결손금</th><th>청구</th></tr></thead><tbody>${candRows}</tbody></table></div>
         <div class="sumline">${P.act.length ? `청구 대상 <b>${P.act.length}개 해</b>(${P.act.join(', ')}년) · 공제금액 합계 <b>${won(maxSum)}</b>(신고서 반영분 제외 시 <b>${won(incr)}</b> 추가) · 청구 후 남는 이월결손금 <b>${won(P.remainAfterClaims)}</b>` : '청구할 해의 공제금액을 입력하면 합계가 표시됩니다.'}</div>
         ${P.act.length > 1 ? '<small class="dim">오래된 해부터 청구하세요. 뒤 해의 입력표는 앞 해 청구를 반영한 값입니다.</small>' : ''}
         ${mid.length ? `<div class="box warn" style="font-size:13px;margin:10px 0 0">청구하는 해 사이의 <b>${mid.join(', ')}년</b> 신고서는 세액이 같아도 이월결손금명세서 숫자가 달라질 수 있습니다. 청구 기한 안이면 명세서와 공제 내역을 정정할 수 있으니, 정정이 필요한지 확인하세요.</div>` : ''}
         <small class="dim">청구 기한은 법정신고기한이 지난 후 5년 이내입니다(국세기본법 제45조의2).</small>`, '', !P.act.length));
-    if (P.priorWarn.length) cards.push(opt('ask', `${L()}. 앞 해 신고 내용 확인 필요`,
+    if (P.priorWarn.length) cards.push(opt('ask', `${L()}앞 해 신고 내용 확인 필요`,
       `<p>${[...new Set(P.priorWarn.map((w) => w.year))].join(', ')}년 신고서 공제가 계산과 다릅니다. 이 도구는 이월결손금이 덜 반영된 해의 경정청구만 다루므로, 앞 해는 세무사에게 확인하세요.</p>`));
     return `<div class="card">
       <h1 style="margin-bottom:4px">점검 결과</h1>
@@ -671,7 +687,7 @@ const screens = {
       ${remItems.length ? `<ul class="plain" style="font-size:14px">${remItems.map((i) => `<li>${i.year}년에 생긴 손실 중 <b>${won(i.remain)}</b> · ${i.lastYear ? `${i.lastYear}년 귀속까지 공제할 수 있습니다 ${i.lastYear - Y <= 1 ? '<span class="rc2 w">기한 임박</span>' : ''}` : '<span class="dim">사용 기한 규칙 확인 필요</span>'}</li>`).join('')}</ul>` : ''}
       ${end.lostTotal ? `<div class="box warn" style="font-size:13.5px">기한이 지나 공제할 수 없게 된 금액이 ${won(end.lostTotal)} 있습니다.</div>` : ''}
       ${rep != null ? `<div class="box ${rep === P.remainActual ? 'info' : 'warn'}" style="font-size:13.5px">${Y}년 신고서에 적은 잔액 ${won(rep)} ${rep === P.remainActual ? '→ 계산과 일치합니다.' : `→ 계산(${won(P.remainActual)})과 다릅니다. 입력값과 앞 해 신고를 확인하세요.`}</div>` : ''}
-      <h2 class="sec">② 남은 이월결손금 경정청구 방안</h2>
+      <h2 class="sec">② 경정청구할 수 있는 해</h2>
       ${cards.length ? cards.join('') : '<div class="box info">입력한 값 기준으로 처리할 이월결손금이 없습니다. 입력값과 다른 공제 항목은 별도로 확인하세요.</div>'}
       ${P.cands.length ? `<div class="box info" style="font-size:14px"><b>이미 세금을 냈다면</b><br>경정청구는 이미 낸 세금(추가 납부분 포함)의 환급을 신청하는 절차입니다. 공제가 늘면 줄어든 세액만큼 환급될 수 있습니다. 환급액은 홈택스에 명세서를 입력하면 자동 계산되므로 그 결과를 확인하세요. 지방소득세는 위택스에서 따로 경정청구합니다.${end.paid != null ? `<br><b>${Y}년에 낸 종합소득세 ${won(end.paid)}</b>는 환급 상한의 참고 값입니다. 실제 환급액은 이보다 적을 수 있습니다.` : '<br><small class="dim">낸 세금을 입력하면(3단계 최근 해) 환급 상한 참고 금액을 표시합니다.</small>'}</div>` : ''}
       <div class="hint">참고용입니다. 청구와 이월 여부는 세무사 또는 세무서에 확인한 뒤 정하세요.</div>
