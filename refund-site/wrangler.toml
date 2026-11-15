@@ -1,0 +1,6 @@
+# 이월결손금 환급점검(정적 페이지)만 올리는 Worker. 서버 로직·KV·비밀값이 없다.
+name = "jangbu-refund"
+compatibility_date = "2024-11-01"
+
+[assets]
+directory = "./public"

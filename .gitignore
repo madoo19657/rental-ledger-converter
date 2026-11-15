@@ -13,3 +13,7 @@ dist/
 server/paid-module.gen.mjs
 server/public/
 server/node_modules/
+
+refund-site/public/
+refund-site/node_modules/
+refund-site/.wrangler/
