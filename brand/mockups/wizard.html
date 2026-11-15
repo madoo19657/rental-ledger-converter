@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>장부선생 가로 위저드 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --accent:#4a6a5c; --accent-d:#3b574a; --accent-soft:#eef2ef; --bg:#f6f8f9; --card:#fff;
+  --text:#1f2937; --muted:#6b7280; --line:#e5e9ec; --warn-bg:#fffaeb; --warn-line:#f6e3a1; --warn-text:#a15c07;
+  --err:#dc2626; --err-bg:#fdecec; --info:#3b6fd4; --info-bg:#eaf1fd; --ok:#22c55e;
+}
+:root[data-theme="dark"]{
+  --accent:#8fb3a2; --accent-d:#a6c6b6; --accent-soft:#233029; --bg:#12171a; --card:#1a2125;
+  --text:#e7ecef; --muted:#9aa7ae; --line:#2b353b; --warn-bg:#2b2615; --warn-line:#5a4d1c; --warn-text:#e8c36a;
+  --err-bg:#3a1c1c; --info-bg:#1b2740;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Nanum Gothic','Malgun Gothic',sans-serif;line-height:1.6;word-break:keep-all}
+button{font-family:inherit;cursor:pointer}
+.trial{background:var(--accent);color:#fff;font-size:13px;text-align:center;padding:9px 16px}
+.trial a{color:#fff;text-decoration:underline;margin-left:10px;cursor:pointer}
+.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.top-in{max-width:1180px;margin:0 auto;padding:12px 20px;display:grid;grid-template-columns:200px 1fr 200px;align-items:center;gap:12px}
+.brand{display:flex;gap:10px;align-items:center;font-weight:800;font-size:18px}
+.brand i{width:34px;height:34px;border-radius:9px;background:var(--accent);display:grid;place-items:center;color:#fff;font-style:normal;font-size:16px}
+.brand small{display:block;font-weight:400;font-size:11px;color:var(--muted);line-height:1.2}
+.tools{justify-self:end;display:flex;gap:10px;align-items:center;color:var(--muted);font-size:14px}
+.icon-btn{border:0;background:none;font-size:18px;color:var(--muted)}
+.stepper{display:flex;align-items:flex-start;max-width:560px;width:100%;margin:0 auto}
+.st{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;background:none;border:0;color:var(--muted);font-size:12px;padding:0}
+.st b{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:14px;background:var(--card);color:var(--muted)}
+.st.cur b{background:var(--accent);border-color:var(--accent);color:#fff}
+.st.cur{color:var(--text);font-weight:700}
+.st.done b{background:var(--accent);border-color:var(--accent);color:#fff}
+.st.done{color:var(--text);cursor:pointer}
+.st:disabled{cursor:default}
+.bar{flex:1;height:2px;background:var(--line);margin-top:17px}
+.bar.done{background:var(--accent)}
+
+main{max-width:1180px;margin:0 auto;padding:28px 20px 120px}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+.viewport{overflow:hidden}
+.track{display:flex;width:300%;transition:transform .22s ease}
+.pane{width:calc(100%/3);padding:2px 4px 2px 2px;flex:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+h2.t{margin:0 0 6px;font-size:21px;padding-left:12px;border-left:4px solid var(--accent)}
+.sub{color:var(--muted);font-size:14px;margin:0 0 20px 16px}
+.drop{border:2px dashed #cfd6da;border-radius:14px;padding:44px 16px;text-align:center;background:var(--bg);cursor:pointer}
+.drop:hover{border-color:var(--accent)}
+.drop .ic{font-size:34px;color:var(--accent)}
+.drop p{margin:8px 0 2px;font-size:16px}
+.drop small{color:var(--muted)}
+.shield{margin-top:8px;font-size:13px;color:var(--muted)}
+.read{margin-top:16px;border:1px solid var(--line);border-radius:12px}
+.read summary{padding:13px 16px;cursor:pointer;font-weight:700;font-size:14px}
+.read div{padding:0 16px 14px;font-size:14px;color:var(--muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;background:var(--bg)}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-d);font-weight:700}
+.prog{background:var(--accent-soft);border-radius:12px;padding:12px 16px;margin-bottom:22px}
+.prog .row{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:8px}
+.prog .tr{height:7px;background:var(--line);border-radius:9px;overflow:hidden}
+.prog .fl{height:100%;background:var(--accent);width:0;transition:width .2s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+.grp{font-size:13px;font-weight:700;color:var(--accent-d);padding:0 0 8px;margin:0 0 14px;border-bottom:1px solid var(--line)}
+.fld{margin-bottom:16px}
+.fld label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;margin-bottom:6px}
+.mk{font-size:13px}
+.mk.req{color:var(--err)}
+.mk.ok{color:var(--ok)}
+.inp{position:relative}
+.inp input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 36px 11px 12px;font:inherit;font-size:16px;text-align:right;background:var(--card);color:var(--text)}
+.inp input[type=date]{text-align:left;padding-right:12px}
+.inp input:focus{outline:2px solid var(--accent);outline-offset:0}
+.inp span{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px}
+.words{font-size:12px;color:var(--muted);margin-top:4px;min-height:18px;text-align:left}
+select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;background:var(--card);color:var(--text)}
+.opt{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.actions{display:flex;justify-content:space-between;align-items:center;margin-top:24px;gap:12px}
+.btn{border:0;border-radius:11px;padding:12px 22px;font-size:15px;font-weight:700}
+.btn.pri{background:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(74,106,92,.25)}
+.btn.pri:disabled{background:#b9c6c0;box-shadow:none;cursor:not-allowed}
+.btn.gh{background:none;color:var(--muted)}
+.btn.sec{background:var(--card);color:var(--accent-d);border:1px solid var(--line)}
+.hint{font-size:13px;color:var(--muted)}
+.side .card{padding:20px;margin-bottom:16px}
+.side h3{margin:0 0 12px;font-size:16px}
+.side ol{margin:0;padding-left:18px;font-size:14px;color:var(--text)}
+.side li{margin-bottom:6px}
+.priv{background:var(--accent-soft);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--accent-d)}
+.help{background:var(--accent-soft)}
+.help p{font-size:14px;margin:0 0 12px;color:var(--muted)}
+.help .btn{width:100%;background:var(--card);border:1px solid var(--line);color:var(--text)}
+.side-m{display:none}
+
+/* results */
+#results{display:none}
+body.res #wizard{display:none}
+body.res #results{display:block}
+.rtop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.rtop .l{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.edit{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:14px;font-weight:700;color:var(--accent-d)}
+.rtop .r{display:flex;gap:8px}
+.lockb{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:14px;font-weight:700;color:var(--text)}
+.lockb.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+.stale{display:none;background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-text);border-radius:12px;padding:11px 16px;font-size:14px;margin-bottom:14px}
+.stale.on{display:block}
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);padding:0 8px;scrollbar-width:thin}
+.tabs button{flex:none;border:0;background:none;padding:15px 14px;font-size:14px;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--text);font-weight:800;border-bottom-color:var(--accent)}
+.tp{display:none;padding:24px}
+.tp.on{display:block}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.kpi.hi{background:var(--accent-soft)}
+.kpi small{color:var(--muted);font-size:13px}
+.kpi b{display:block;font-size:24px;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi b em{font-style:normal;font-size:13px;font-weight:400;color:var(--muted);margin-left:3px}
+h3.sec{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:18px}
+.chk{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:10px;font-size:15px}
+.chk .code{margin-left:auto;font-family:Consolas,monospace;font-size:11px;color:var(--muted)}
+.bd{font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;flex:none}
+.bd.w{background:#fef0c7;color:#9a5a00}.bd.i{background:#eef1f4;color:#4b5563}.bd.e{background:var(--err-bg);color:var(--err)}
+.tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15px;margin-top:6px}
+.tbl th{background:var(--bg);text-align:right;padding:11px 16px;color:var(--muted);font-weight:700;font-size:13px}
+.tbl th:first-child{text-align:left}
+.tbl td{padding:10px 16px;border-bottom:1px solid var(--line);text-align:right}
+.tbl td:first-child{text-align:left}
+.tbl tr.h td{font-weight:800;background:var(--bg)}
+.tbl tr.s td:first-child{padding-left:34px}
+.tbl tr.t td{background:var(--accent-soft);font-weight:800;font-size:17px;border-bottom:0}
+.note{display:flex;gap:12px;background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:12px;padding:14px 16px;color:var(--warn-text);font-size:14px;margin-bottom:18px}
+.acc{background:var(--bg);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.acc h4{margin:0 0 10px;display:flex;align-items:center;gap:10px;font-size:16px}
+.acc h4 i{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;display:grid;place-items:center;font-size:13px}
+.hv{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 16px;margin-bottom:8px;font-size:14px;gap:10px}
+.hv b{font-variant-numeric:tabular-nums}
+.hv.tot{background:#eef1f2}
+.cp{border:0;background:none;color:var(--accent);font-size:13px;font-weight:700;margin-left:10px}
+.empty{color:var(--muted);text-align:center;padding:60px 0;font-size:14px}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:34px}
+
+/* modal + toast */
+.ov{position:fixed;inset:0;background:rgba(71,78,92,.72);display:none;place-items:center;z-index:50;padding:16px}
+.ov.on{display:grid}
+.modal{background:var(--card);border-radius:24px;padding:36px;width:100%;max-width:460px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.modal .k{width:64px;height:64px;border-radius:16px;background:var(--accent-soft);display:grid;place-items:center;margin:0 auto 10px;font-size:28px}
+.modal h3{margin:0 0 6px;font-size:22px}
+.modal p{margin:0 0 20px;color:var(--muted);font-size:14px}
+.modal .l{text-align:left;font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 6px}
+.modal input.em{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font:inherit;color:var(--text)}
+.codes{display:flex;gap:8px}
+.codes input{width:100%;min-width:0;aspect-ratio:1/1.1;text-align:center;font-size:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-family:inherit;color:var(--text)}
+.modal .btn{width:100%;margin-top:20px;padding:15px}
+.modal .skip{display:inline-block;margin-top:14px;color:var(--muted);text-decoration:underline;background:none;border:0;font-size:14px;font-weight:700}
+.modal .st2{margin-top:10px;font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60}
+.toast.on{opacity:1}
+
+@media(max-width:860px){
+  .top-in{grid-template-columns:1fr auto;grid-template-areas:"b t" "s s"}
+  .brand{grid-area:b}.tools{grid-area:t}.stepper{grid-area:s;max-width:none}
+  .tools .who{display:none}
+  .stage{grid-template-columns:1fr}
+  .side{display:none}
+  .side-m{display:block;margin-bottom:14px}
+  .side-m summary{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-weight:700;font-size:14px;cursor:pointer}
+  .side-m div{padding:10px 16px;font-size:14px;color:var(--muted)}
+  .grid2{grid-template-columns:1fr}
+  .opt{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  .card{padding:20px 16px}
+  .actions{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:12px 16px;margin:0;z-index:15}
+  .actions .btn{flex:1}
+  .actions .btn.gh{flex:none}
+  .actions .hint{display:none}
+  .st{min-width:48px}
+  .tp{padding:16px 12px}
+}
+</style>
+</head>
+<body>
+<div class="trial">체험판 모드입니다. 본인 파일 업로드, 저장 및 출력은 라이선스(이메일 + 6자리 코드)가 필요합니다.<a onclick="modal(true)">라이선스 등록</a></div>
+<header class="top"><div class="top-in">
+  <div class="brand"><i>📖</i><div>장부선생<small>간편장부 → 복식부기 변환</small></div></div>
+  <nav class="stepper" id="stepper"></nav>
+  <div class="tools"><button class="icon-btn" id="theme" title="다크 모드">☾</button><span class="who">게스트 사용자</span></div>
+</div></header>
+
+<main>
+<!-- WIZARD -->
+<div id="wizard">
+ <div class="stage">
+  <div>
+   <details class="side-m"><summary>이 단계에서 할 일</summary><div id="tipsM"></div></details>
+   <div class="viewport"><div class="track" id="track">
+
+    <section class="pane"><div class="card">
+      <h2 class="t">Step 1. 간편장부 파일 올리기</h2>
+      <p class="sub">엑셀(.xlsx) 또는 CSV 파일을 올려 주세요. 체험판은 가상 샘플만 읽을 수 있습니다.</p>
+      <div class="drop" id="drop" onclick="loadSample()">
+        <div class="ic" id="dropIc">☁</div>
+        <p id="dropTxt">파일을 놓거나 눌러서 고르세요</p>
+        <small>지원 형식: .xlsx, .csv · 최대 10MB</small>
+        <div class="shield">🛡 파일 내용은 브라우저 밖으로 나가지 않습니다</div>
+      </div>
+      <details class="read" id="read"><summary>무엇을 읽었나요?</summary>
+        <div id="readBody">아직 읽은 파일이 없습니다.</div></details>
+      <div class="actions"><span></span><span class="hint" id="h1">먼저 파일을 올려 주세요</span><button class="btn pri" id="n1" disabled onclick="go(1)">반영하고 다음 ›</button></div>
+    </div></section>
+
+    <section class="pane"><div class="card">
+      <h2 class="t">Step 2. 필수 정보 입력</h2>
+      <p class="sub">간편장부에는 없는 값입니다. 7개를 모두 입력해야 다음으로 갈 수 있어요.</p>
+      <div class="prog"><div class="row"><span>진행률</span><span id="pc">0 / 7 입력함</span></div><div class="tr"><div class="fl" id="pf"></div></div></div>
+      <div class="grid2">
+        <div><div class="grp">GROUP A · 소득금액에 영향</div>
+          <div class="fld"><label>건물 취득가액 <span class="mk" data-m="b"></span></label><div class="inp"><input data-k="b" inputmode="numeric" placeholder="0"><span>원</span></div><div class="words" data-w="b"></div></div>
+          <div class="fld"><label>토지 취득가액 <span class="mk" data-m="l"></span></label><div class="inp"><input data-k="l" inputmode="numeric" placeholder="0"><span>원</span></div><div class="words" data-w="l"></div></div>
+          <div class="fld"><label>건물 취득일자 <span class="mk" data-m="d"></span></label><div class="inp"><input data-k="d" type="date"></div></div>
+          <div class="fld"><label>기초 감가상각누계액 <span class="mk" data-m="a"></span></label><div class="inp"><input data-k="a" inputmode="numeric" placeholder="0"><span>원</span></div><div class="words" data-w="a"></div></div>
+        </div>
+        <div><div class="grp">GROUP B · 재무상태표만</div>
+          <div class="fld"><label>기초 현금/예금 잔액 <span class="mk" data-m="c"></span></label><div class="inp"><input data-k="c" inputmode="numeric" placeholder="0"><span>원</span></div><div class="words" data-w="c"></div></div>
+          <div class="fld"><label>기초 임대보증금 <span class="mk" data-m="r"></span></label><div class="inp"><input data-k="r" inputmode="numeric" placeholder="0"><span>원</span></div><div class="words" data-w="r"></div></div>
+          <div class="fld"><label>차입금(대출) 잔액 <span class="mk" data-m="x"></span></label><div class="inp"><input data-k="x" inputmode="numeric" placeholder="0"><span>원</span></div><div class="words" data-w="x"></div></div>
+        </div>
+      </div>
+      <div class="actions"><button class="btn gh" onclick="go(0)">‹ 이전</button><span class="hint" id="h2"></span><button class="btn pri" id="n2" disabled onclick="go(2)">반영하고 다음 ›</button></div>
+    </div></section>
+
+    <section class="pane"><div class="card">
+      <h2 class="t">Step 3. 추가 설정 <span style="font-size:13px;font-weight:400;color:var(--muted)">(선택)</span></h2>
+      <p class="sub">바꿀 게 없으면 기본값 그대로 결과를 볼 수 있어요.</p>
+      <div class="opt">
+        <div class="fld"><label>과세연도</label><select><option>2026 귀속</option><option>2025 귀속</option></select></div>
+        <div class="fld"><label>부가세 처리</label><select><option>부가세 별도 (공급가액 기준)</option><option>부가세 포함</option></select></div>
+        <div class="fld"><label>세무조정</label><select><option>기본 (자동 반영)</option><option>직접 입력</option></select></div>
+      </div>
+      <div class="actions"><button class="btn gh" onclick="go(1)">‹ 이전</button><button class="btn sec" onclick="showResults(true)">건너뛰고 결과 보기</button><button class="btn pri" onclick="showResults(false)">반영하고 결과 보기 ›</button></div>
+    </div></section>
+
+   </div></div>
+  </div>
+  <aside class="side">
+    <div class="card"><h3 id="tipT">이 단계에서 할 일</h3><ol id="tips"></ol></div>
+    <div class="priv">🛡 파일 내용은 브라우저 밖으로 나가지 않습니다.</div>
+    <div class="card help" style="margin-top:16px"><h3>이용 문의</h3><p>사용 방법과 오류는 카카오톡으로 문의해 주세요. 세무 상담은 제공하지 않습니다.</p><button class="btn" onclick="modal(true)">1:1 카톡 문의하기 🔒</button><div class="hint" style="margin-top:8px;text-align:center">유료 이용권 사용자 전용 · <a style="color:var(--accent-d);cursor:pointer;text-decoration:underline" onclick="toast('시안에서는 동작하지 않습니다')">사용 설명서 보기</a></div></div>
+  </aside>
+ </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results">
+  <div class="rtop">
+    <div class="l"><button class="edit" onclick="editInputs()">← 입력 수정</button>
+      <div><h2 class="t" style="margin:0">변환 완료 및 보고서</h2><p class="sub" style="margin:4px 0 0 16px">입력된 데이터를 바탕으로 복식부기 장부를 생성했습니다.</p></div></div>
+    <div class="r"><button class="lockb" onclick="modal(true)">복사하기 🔒</button><button class="lockb" onclick="modal(true)">저장 🔒</button><button class="lockb pri" onclick="modal(true)">인쇄 🔒</button></div>
+  </div>
+  <div class="stale" id="stale">⚠ 수정됨 · 결과는 이전 값 기준입니다. 최신 값을 보려면 [입력 수정]에서 다시 반영해 주세요.</div>
+  <div class="card" style="padding:0">
+    <div class="tabs" id="tabs"></div>
+    <div class="tp on" data-t="0">
+      <div class="kpis">
+        <div class="kpi"><small>총 수입금액</small><b>154,200,000<em>원</em></b></div>
+        <div class="kpi"><small>총 필요경비</small><b>66,750,000<em>원</em></b></div>
+        <div class="kpi hi"><small>당기순이익</small><b>87,450,000<em>원</em></b></div>
+        <div class="kpi"><small>세무조정 후 소득</small><b>85,200,000<em>원</em></b></div>
+      </div>
+      <h3 class="sec">☑ 확인할 항목</h3>
+      <div class="chk"><span class="bd w">확인 필요</span>관리비 수입의 VAT 구분 재검토 권장<span class="code">CODE: REV-004</span></div>
+      <div class="chk"><span class="bd i">참고</span>전기 대비 수선비 지출이 15% 증가했습니다<span class="code">CODE: EXP-112</span></div>
+      <div class="chk"><span class="bd e">오류</span>기초 임대보증금과 총 임대 현황의 불일치 감지<span class="code">CODE: ERR-BS-09</span></div>
+      <h3 class="sec" style="margin-top:28px">손익계산서 <small style="margin-left:auto;font-size:12px;color:var(--muted);font-weight:400">(단위: 원)</small></h3>
+      <table class="tbl"><thead><tr><th>계정과목</th><th>금액</th><th>비고</th></tr></thead><tbody>
+        <tr class="h"><td>Ⅰ. 매출액 (수입금액)</td><td>154,200,000</td><td></td></tr>
+        <tr class="s"><td>1. 임대료 수입</td><td>142,000,000</td><td></td></tr>
+        <tr class="s"><td>2. 간주임대료</td><td>12,200,000</td><td></td></tr>
+        <tr class="h"><td>Ⅱ. 매출원가 (필요경비)</td><td>66,750,000</td><td></td></tr>
+        <tr class="s"><td>1. 인건비</td><td>18,000,000</td><td></td></tr>
+        <tr class="s"><td>2. 제세공과금</td><td>4,500,000</td><td></td></tr>
+        <tr class="s"><td>3. 감가상각비</td><td>12,000,000</td><td></td></tr>
+        <tr class="s"><td>4. 기타 경비</td><td>32,250,000</td><td></td></tr>
+        <tr class="t"><td>Ⅲ. 당기순이익 (Ⅰ − Ⅱ)</td><td>87,450,000</td><td>56.7%</td></tr>
+      </tbody></table>
+    </div>
+    <div class="tp" data-t="1">
+      <h3 class="sec">홈택스 입력값 가이드</h3>
+      <div class="note">⚠ <div><b>주의사항</b><br>이 값은 입력된 장부 데이터를 바탕으로 자동 산출된 <b>참고용</b> 수치입니다. 실제 홈택스 신고 전 반드시 담당 세무사의 최종 확인을 거치시기 바랍니다.</div></div>
+      <div class="acc"><h4><i>1</i>인적사항 및 기본정보</h4>
+        <div class="hv">사업자 등록번호<span><b>(예시 번호)</b><button class="cp" onclick="cp()">복사</button></span></div>
+        <div class="hv">성명 (상호)<span><b>홍길동 (예시상가)</b><button class="cp" onclick="cp()">복사</button></span></div>
+        <div class="hv">사업장 소재지<span><b>서울특별시 ○○구 ○○로 00</b><button class="cp" onclick="cp()">복사</button></span></div></div>
+      <div class="acc"><h4><i>2</i>총수입금액 (매출액)</h4>
+        <div class="hv">업종별 수입금액 (임대료)<span><b>142,000,000</b><button class="cp" onclick="cp()">복사</button></span></div>
+        <div class="hv">기타 수입금액 (간주임대료 등)<span><b>12,200,000</b><button class="cp" onclick="cp()">복사</button></span></div>
+        <div class="hv tot">합계 (홈택스 자동계산 확인용)<span><b>154,200,000</b><button class="cp" onclick="cp()">복사</button></span></div></div>
+      <div class="acc"><h4><i>3</i>필요경비 상세 <span style="margin-left:auto;color:var(--muted);font-weight:400;font-size:13px">펼치기 ⌄</span></h4></div>
+    </div>
+    <div class="tp" data-t="x"><div class="empty">이 탭은 시안에서 생략했습니다. 실제 앱의 같은 이름 탭을 그대로 씁니다.</div></div>
+  </div>
+  <footer>본 보고서는 입력된 데이터를 바탕으로 자동 생성되었으며, 최종 신고 전 반드시 전문가의 검토를 거치시기 바랍니다.</footer>
+</div>
+</main>
+
+<div class="ov" id="ov" onclick="if(event.target===this)modal(false)"><div class="modal">
+  <div class="k">🔑</div><h3>이용권이 필요합니다</h3>
+  <p>모든 기능을 제한 없이 사용하시려면<br>이메일로 받으신 라이선스 정보를 입력해 주세요.</p>
+  <div class="l">등록 이메일</div><input class="em" type="email" placeholder="example@email.com">
+  <div class="l">인증 코드 (6자리)</div><div class="codes" id="codes"></div>
+  <button class="btn pri" onclick="toast('이용권 확인 서버 준비 중입니다')">라이선스 활성화</button>
+  <button class="skip" onclick="modal(false)">체험 버전으로 계속</button>
+  <div class="st2">··· 서버를 준비 중입니다</div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const steps=['파일 업로드','필수 정보','추가 설정','결과 확인'];
+const tips=[
+ ['간편장부 엑셀 또는 CSV 파일을 올려요.','올린 뒤 "무엇을 읽었나요?"에서 사업장(시트)을 확인해요.','체험판은 가상 샘플만 읽어요.'],
+ ['건물·토지 취득가액과 취득일을 입력해요.','기초 감가상각누계액, 현금, 보증금, 대출 잔액도 필요해요.','칸 아래에 "3억 1,110만 원"처럼 풀어 보여 줘요.'],
+ ['과세연도, 부가세, 세무조정을 확인해요.','바꿀 게 없으면 건너뛰고 결과를 봐도 돼요.']
+];
+let cur=0, fileOk=false, hasResult=false, stale=false;
+const vals={};
+const KEYS=['b','l','d','a','c','r','x'];
+
+function renderStepper(){
+  const el=$('#stepper'); let h='';
+  steps.forEach((s,i)=>{
+    const done = i<cur || (document.body.classList.contains('res') && i<3);
+    const isCur = document.body.classList.contains('res') ? i===3 : i===cur;
+    const cls = isCur?'cur':(done?'done':'');
+    const canGo = done && !document.body.classList.contains('res') ;
+    h+=`<button class="st ${cls}" ${done?'':'disabled'} onclick="${done?`goTo(${i})`:''}"><b>${done&&!isCur?'✓':i+1}</b>${s}</button>`;
+    if(i<3) h+=`<div class="bar ${i<cur||document.body.classList.contains('res')?'done':''}"></div>`;
+  });
+  el.innerHTML=h;
+}
+function goTo(i){ if(document.body.classList.contains('res')){document.body.classList.remove('res');} go(i,true); }
+function go(i,force){
+  cur=i; $('#track').style.transform=`translateX(${-i*100/3}%)`;
+  const t=tips[i]; $('#tips').innerHTML=t.map(x=>`<li>${x}</li>`).join(''); $('#tipsM').innerHTML='<ol style="margin:0;padding-left:18px">'+t.map(x=>`<li>${x}</li>`).join('')+'</ol>';
+  $('#tipT').textContent=`Step ${i+1}에서 할 일`;
+  renderStepper(); window.scrollTo({top:0,behavior:'smooth'});
+}
+function loadSample(){
+  fileOk=true;
+  $('#dropIc').textContent='📄'; $('#dropTxt').textContent='sample-ledger.csv · 사업장 2곳 읽음';
+  $('#readBody').innerHTML='가상 샘플 장부에서 <b>2개 사업장</b>, 거래 128건을 읽었습니다.<div class="chips"><span class="chip on">✓ 사업장 A</span><span class="chip on">✓ 사업장 B</span></div>';
+  $('#read').open=true; $('#n1').disabled=false; $('#h1').textContent='';
+}
+const toWords=n=>{ if(!n) return ''; const e=Math.floor(n/1e8), m=Math.floor(n%1e8/1e4); let s=''; if(e) s+=e+'억 '; if(m) s+=m.toLocaleString()+'만 '; return (s||n.toLocaleString()+' ')+'원'; };
+function refresh(){
+  let ok=0;
+  KEYS.forEach(k=>{
+    const v=vals[k]; const has = k==='d' ? !!v : (v!==undefined && v!==''&& +v>0);
+    if(has) ok++;
+    const mk=$(`[data-m="${k}"]`); mk.className='mk '+(has?'ok':'req'); mk.textContent=has?'✔':'＊';
+    const w=$(`[data-w="${k}"]`); if(w) w.textContent=has?toWords(+vals[k]):'';
+  });
+  $('#pc').textContent=`${ok} / 7 입력함`; $('#pf').style.width=(ok/7*100)+'%';
+  $('#n2').disabled = ok<7; $('#h2').textContent = ok<7 ? `${7-ok}개 더 입력하면 다음으로 갈 수 있어요` : '모두 입력했어요';
+}
+$$('[data-k]').forEach(inp=>{
+  inp.addEventListener('input',()=>{
+    const k=inp.dataset.k;
+    if(k==='d'){vals[k]=inp.value}
+    else{ const raw=inp.value.replace(/[^\d]/g,''); vals[k]=raw; inp.value=raw?(+raw).toLocaleString():''; }
+    if(hasResult) stale=true;
+    refresh();
+  });
+});
+function showResults(skip){
+  hasResult=true; if(!skip) stale=false;
+  document.body.classList.add('res'); $('#stale').classList.toggle('on',stale); renderStepper(); window.scrollTo(0,0);
+}
+function editInputs(){ document.body.classList.remove('res'); go(1); }
+
+const tabNames=['요약 보고서','홈택스 입력값','재무상태표','손익계산서','세무조정계산서','수입금액 검토부','조정사항 요약','합계잔액시산표','분개장','현금/예금 대사'];
+$('#tabs').innerHTML=tabNames.map((n,i)=>`<button class="${i?'':'on'}" data-i="${i}">${n}</button>`).join('');
+$('#tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return; const i=+b.dataset.i;
+  $$('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  $$('.tp').forEach(p=>p.classList.remove('on'));
+  const p=$(`.tp[data-t="${i}"]`)||$('.tp[data-t="x"]'); p.classList.add('on');
+});
+function modal(on){ $('#ov').classList.toggle('on',on); }
+function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('on'); setTimeout(()=>el.classList.remove('on'),1600); }
+function cp(){ toast('복사했습니다'); }
+$('#codes').innerHTML=Array.from({length:6},()=>'<input maxlength="1" inputmode="numeric">').join('');
+$$('#codes input').forEach((el,i,all)=>el.addEventListener('input',()=>{ if(el.value&&all[i+1]) all[i+1].focus(); }));
+$('#theme').onclick=()=>{ const d=document.documentElement; const dark=d.dataset.theme==='dark'; d.dataset.theme=dark?'light':'dark'; $('#theme').textContent=dark?'☾':'☀'; };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') modal(false); });
+refresh(); go(0);
+</script>
+</body>
+</html>
