@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>장부선생 — 임대사업자를 위한 계산 도구</title>
+<meta name="description" content="간편장부를 복식부기로 바꾸는 장부변환, 놓친 이월결손금을 찾는 환급점검, 상가 분양·임대 견적서를 만드는 분양견적. 장부선생의 도구를 한곳에서 고르세요.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="장부선생">
+<meta property="og:title" content="장부선생 — 임대사업자를 위한 계산 도구">
+<meta property="og:description" content="장부변환, 환급점검, 분양견적. 장부선생의 도구를 한곳에서 고르세요.">
+<meta property="og:url" content="__SITE_URL__/">
+<meta property="og:image" content="__SITE_URL__/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#f4f2ed">
+<meta name="apple-mobile-web-app-title" content="장부선생">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* 장부선생 대문: 제품 메뉴. 색과 글꼴은 장부변환 화면(src/template.html)과 맞춘다 */
+:root {
+  --bg: #f4f2ed; --card: #fff; --ink: #1f2a2e; --muted: #5f6b6a; --line: #e4e0d6;
+  --accent: #1f5f5b; --accent-soft: #e3efec; --warn-bg: #fdefdc; --warn-line: #f0cfa0; --warn-ink: #8a3b12;
+  --convert: #1f5f5b; --refund: #e8743b; --quote: #24407a;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141817; --card: #1c2221; --ink: #e7ecea; --muted: #a1adaa; --line: #323a38;
+    --accent: #7fc0b6; --accent-soft: #223330; --warn-bg: #3a2f1e; --warn-line: #8a6a2c; --warn-ink: #f3d9b4;
+    --convert: #7fc0b6; --refund: #f29a6b; --quote: #8fa8e6;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.7 "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+  letter-spacing: -0.01em; word-break: keep-all; overflow-wrap: anywhere; -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 3px; border-radius: 8px; }
+.top { background: var(--card); border-bottom: 1px solid var(--line); }
+.top-in, main, footer { max-width: 1080px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+.top-in { display: flex; align-items: center; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+.top img { width: 44px; height: 44px; border-radius: 10px; display: block; }
+.top b { display: block; font-size: 20px; font-weight: 800; line-height: 1.2; }
+.top span { display: block; font-size: 12.5px; color: var(--muted); }
+main { padding-top: 44px; padding-bottom: 40px; }
+.eyebrow { margin: 0 0 6px; color: var(--accent); font-weight: 800; font-size: 15px; }
+h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.3; letter-spacing: -0.02em; font-weight: 800; }
+.lead { margin: 0 0 32px; color: var(--muted); font-size: 17px; max-width: 46em; }
+.menu { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.item { height: 100%; }
+.item a {
+  display: flex; flex-direction: column; height: 100%; padding: 26px 24px 22px; text-decoration: none;
+  background: var(--card); border: 1px solid var(--line); border-radius: 20px; transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.item a:hover { border-color: var(--c); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(40, 36, 24, .08); }
+.item img { width: 72px; height: 72px; border-radius: 16px; display: block; }
+.item h2 { margin: 18px 0 2px; font-size: 22px; font-weight: 800; line-height: 1.3; }
+.item .sub { margin: 0 0 10px; color: var(--c); font-weight: 700; font-size: 14.5px; }
+.item p.desc { margin: 0 0 18px; color: var(--muted); font-size: 15px; flex: 1; }
+.item .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; padding: 0; list-style: none; }
+.item .tags li { font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--bg); color: var(--muted); }
+.go { display: flex; align-items: center; justify-content: space-between; min-height: 50px; padding: 0 18px; border-radius: 12px; background: var(--c); color: #fff; font-weight: 800; }
+.convert { --c: var(--convert); } .refund { --c: var(--refund); } .quote { --c: var(--quote); }
+@media (prefers-color-scheme: dark) { .go { color: #0e1b19; } }
+.notice { margin: 32px 0 0; padding: 14px 18px; border: 1px solid var(--warn-line); border-radius: 12px; background: var(--warn-bg); color: var(--warn-ink); font-size: 14.5px; }
+footer { padding-top: 18px; padding-bottom: 48px; color: var(--muted); font-size: 13.5px; border-top: 1px solid var(--line); }
+footer p { margin: 0 0 8px; }
+footer a { margin-right: 14px; }
+@media (max-width: 900px) { .menu { grid-template-columns: 1fr; } .item a { flex-direction: row; flex-wrap: wrap; gap: 0 18px; padding: 20px; } .item .body { flex: 1; min-width: 200px; } .item h2 { margin-top: 0; } .go { flex-basis: 100%; } }
+@media (max-width: 640px) { .top-in, main, footer { padding-left: 16px; padding-right: 16px; } main { padding-top: 28px; } h1 { font-size: 26px; } .lead { font-size: 16px; margin-bottom: 22px; } .item img { width: 60px; height: 60px; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <img src="/icon-192.png" alt="" width="44" height="44">
+  <div><b>장부선생</b><span>임대사업자를 위한 계산 도구</span></div>
+</div></header>
+<main>
+  <p class="eyebrow">어떤 일을 하시나요?</p>
+  <h1>필요한 도구를 고르세요</h1>
+  <p class="lead">장부선생은 상가 임대사업자가 장부와 신고서 숫자를 스스로 확인할 수 있게 돕는 계산 도구 모음입니다. 아래에서 하나를 누르면 그 화면으로 이동합니다.</p>
+  <ul class="menu">
+    <li class="item convert"><a href="/convert/">
+      <img src="/icons/convert.png" alt="" width="72" height="72">
+      <div class="body">
+        <h2>장부변환</h2>
+        <p class="sub">간편장부 → 복식부기</p>
+        <p class="desc">간편장부 엑셀을 올리면 복식부기 재무제표와 홈택스 입력값으로 계산해 보여 드립니다.</p>
+        <ul class="tags"><li>가상 샘플로 체험</li><li>내 파일은 이용권 필요</li></ul>
+      </div>
+      <span class="go">장부변환 열기 <span aria-hidden="true">→</span></span>
+    </a></li>
+    <li class="item refund"><a href="/refund/">
+      <img src="/icons/refund.png" alt="" width="72" height="72">
+      <div class="body">
+        <h2>환급점검</h2>
+        <p class="sub">이월결손금 놓친 해 찾기</p>
+        <p class="desc">종합소득세 신고서의 임대소득을 단계별로 확인해 남은 이월결손금과 경정청구할 수 있는 해를 찾습니다.</p>
+        <ul class="tags"><li>단계별 안내</li><li>가상 예시 제공</li></ul>
+      </div>
+      <span class="go">환급점검 열기 <span aria-hidden="true">→</span></span>
+    </a></li>
+    <li class="item quote"><a href="__QUOTE_URL__/">
+      <img src="/icons/quote.png" alt="" width="72" height="72">
+      <div class="body">
+        <h2>분양견적</h2>
+        <p class="sub">상가 분양·임대 견적서</p>
+        <p class="desc">호실을 고르고 조건을 넣으면 분양·임대 견적서를 만들어 줍니다. 분양 대행 담당자용입니다.</p>
+        <ul class="tags"><li>담당자 전용</li><li>PIN 필요</li></ul>
+      </div>
+      <span class="go">분양견적 열기 <span aria-hidden="true">→</span></span>
+    </a></li>
+  </ul>
+  <p class="notice">장부선생은 입력한 값으로 계산한 <b>참고 자료</b>를 만들어 주는 도구입니다. 세무 상담이나 신고 대행이 아니며, 신고 전에는 세무 전문가의 확인을 받으세요.</p>
+</main>
+<footer>
+  <p><a href="/legal/terms-of-service.html">이용약관</a><a href="/legal/privacy-policy.html">개인정보 처리방침</a><a href="/legal/refund-policy.html">환불·청약철회 안내</a></p>
+  <p>Copyright © madoo. All rights reserved.</p>
+</footer>
+</body>
+</html>

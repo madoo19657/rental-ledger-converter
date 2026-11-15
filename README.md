@@ -74,6 +74,22 @@ Node 20 이상. 외부 패키지 없음.
 - 법정 서식 그대로의 PDF 레이아웃은 아직 없다. 화면 표와 브라우저 인쇄(PDF 저장)로 대신한다.
 - 실제 엑셀 파일 업로드는 같은 구조의 시험 파일로 확인했고, 사용자의 실제 파일로는 아직 확인하지 않았다.
 
+## 사이트 주소 구성 (2026-11-15)
+
+`scripts/deploy-server.js`가 `server/public`을 아래처럼 만든 뒤 올린다. `--dry`를 붙이면 올리지 않고 폴더만 만든다(로컬 확인용).
+
+| 주소 | 내용 | 원본 |
+|---|---|---|
+| `/` | 대문(제품 메뉴: 장부변환, 환급점검, 분양견적) | `src/landing.html` |
+| `/convert/` | 장부변환 체험 화면 | `dist-public/index.html` |
+| `/refund/` | 환급점검 | `prototype/refund-check.html` |
+| `/legal/` | 이용약관·처리방침·환불 안내 | `dist-public/legal/` |
+| `/api/*` | 이용권 서버 | `server/worker.mjs` |
+
+- 분양견적은 다른 프로젝트(`quote-maker`)라 대문에서 그 주소로 링크만 건다. 주소는 `JANGBU_QUOTE_URL`로 바꿀 수 있다.
+- 장부변환 화면의 아이콘·매니페스트·약관 링크는 상대 경로라 `/convert/` 아래에 같이 둔다.
+- 원본의 미리보기 태그에 적힌 `https://jangbu-license.madoo.workers.dev`는 배포 때 `JANGBU_SERVER_URL`로 바뀐다.
+
 ## 페이지 아이콘 규칙 (2026-11-15)
 
 - 모든 HTML 페이지의 `<head>`에 탭 아이콘(`rel="icon"`), 홈 화면 아이콘(`apple-touch-icon`, 180px), `manifest`(192·512)를 넣는다. 원본은 `brand/favicon.svg`와 `brand/png/home-icon-*.png`.

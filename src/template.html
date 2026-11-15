@@ -9,14 +9,14 @@
 <meta property="og:site_name" content="장부선생">
 <meta property="og:title" content="장부선생 — 간편장부를 복식부기로">
 <meta property="og:description" content="간편장부를 올리면 복식부기 재무제표와 홈택스 입력값으로 계산해 보여 드립니다. 상가 임대사업자용 참고 도구입니다.">
-<meta property="og:url" content="https://jangbu-license.madoo.workers.dev/">
-<meta property="og:image" content="https://jangbu-license.madoo.workers.dev/og-image.png">
+<meta property="og:url" content="https://jangbu-license.madoo.workers.dev/convert/">
+<meta property="og:image" content="https://jangbu-license.madoo.workers.dev/convert/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/*__FAVICON__*/">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1f5f5b">
 <meta name="apple-mobile-web-app-title" content="장부변환">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -435,6 +435,7 @@ button.back, button.ghost { min-height: 52px; padding: 0 22px; border-radius: 12
 .topbar h1 { font-size: 20px; line-height: 1.2; }
 .brandsub { margin: 0; font-size: 12.5px; color: var(--muted); }
 .topbar #licChip { flex: none; }
+.homelink { flex: none; font-size: 14px; text-underline-offset: 3px; }
 .topbar .stepper { flex: 1; align-items: center; justify-content: center; }
 .topbar .stepper li { flex: 0 0 auto; display: flex; align-items: center; position: static; }
 .topbar .stepper li + li::before { position: static; display: block; width: clamp(14px, 3.6vw, 52px); height: 2px; margin: 0 8px; }
@@ -622,6 +623,7 @@ dialog#licDlg .agree { text-align: left; }
       <li data-step="3"><button type="button"><span class="num">3</span><span class="txt"><b>추가 설정</b><span class="st"></span></span></button></li>
       <li data-step="4"><button type="button"><span class="num">4</span><span class="txt"><b>결과 확인</b><span class="st"></span></span></button></li>
     </ol>
+    <a class="homelink hidden" id="homeLink" href="/">전체 도구</a>
     <span class="chip hidden" id="licChip"></span>
   </div>
 </div>
@@ -1546,6 +1548,8 @@ document.addEventListener('click', function (e) {
   if (locked()) { openLic('1:1 카톡 문의는 이용권 사용자 전용입니다.'); return; }
   if (CONTACT_URL) window.open(CONTACT_URL, '_blank', 'noopener'); else toast('문의 채널을 준비하고 있습니다');
 });
+// 사이트의 /convert/ 아래에서 열렸을 때만 대문(전체 도구)으로 가는 링크를 보여 준다. 파일로 연 개인 빌드에는 대문이 없다
+if (/^https?:$/.test(location.protocol) && /^\/convert(\/|$)/.test(location.pathname)) { var hl = $('#homeLink'); if (hl) hl.classList.remove('hidden'); }
 function applyEdition() {
   document.body.classList.toggle('is-trial', locked());
   $$('.contactbtn .lk').forEach(function (el) { el.classList.toggle('hidden', !locked()); });
