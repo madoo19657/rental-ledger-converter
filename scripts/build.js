@@ -73,10 +73,10 @@ const refundScenario = JSON.parse(read('config/refund-demo.public.json'));
 const R = require('../src/refund-check.js')();
 const refundDemo = { scenario: refundScenario, key: R.inputKey(refundScenario.years, refundRules), result: R.analyze(refundScenario.years, refundRules) };
 
-// 브랜드: 파비콘(데이터 주소)과 헤더 로고(인라인 SVG)
-const faviconSvg = read('brand/favicon.svg').trim();
+// 브랜드: 파비콘(데이터 주소)과 헤더 로고(인라인 SVG). 장부변환 전용(청록, 점·볼 터치 없는 책 모양)을 쓴다
+const faviconSvg = read('brand/favicon-convert.svg').trim();
 const favicon = 'data:image/svg+xml,' + encodeURIComponent(faviconSvg).replace(/'/g, '%27');
-const logo = read('brand/logo-mark.svg').trim().replace(/ width="\d+" height="\d+"/, '');
+const logo = read('brand/logo-mark-convert.svg').trim().replace(/ width="\d+" height="\d+"/, '');
 
 // 함수 형태로 치환해 문자열 안의 `$` 패턴이 해석되지 않게 한다
 const inject = (marker, value) => {
