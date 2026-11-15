@@ -5,12 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>장부선생 — 간편장부를 복식부기로</title>
 <link rel="icon" href="/*__FAVICON__*/">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* ───────── 디자인 토큰 ─────────
-   네이버 블로그 서식 기준(나눔고딕, 회녹색 포인트, 채도 높은 초록 지양)을 따르되
+   글꼴은 Pretendard, 포인트는 짙은 청록(채도 높은 초록 지양).
    금융·세무 도구에 맞게 위계·여백·대비를 정리했다. */
 :root {
   --bg: #f4f2ed; --card: #fff; --ink: #1f2a2e; --muted: #5f6b6a;
@@ -21,7 +20,7 @@
   --err: #c0392b; --err-soft: #fdecea; --ok: #1f7a5c; --assumed: #fffaf8;
   color-scheme: light;
   --radius: 16px; --shadow: 0 1px 2px rgba(40,36,24,.04);
-  --font: "Nanum Gothic", "나눔고딕", "Malgun Gothic", -apple-system, "Segoe UI", sans-serif;
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {

@@ -197,7 +197,7 @@
 | B-1 공개용 빌드 | **구현됨** | `node scripts/build.js --public` → `dist-public/index.html`. 개인 기본값·사업장별 값(`SITE_DEFAULTS`)·개인 설정은 `config/*.private.*`로 분리 |
 | B-2 개인 값 검사 | **구현됨** | `node scripts/check-public.js`: 공개 빌드 + 저장소 파일 검사, 금지어는 비공개 목록 + 주민번호·전화·계좌 패턴. 현재 통과 |
 | B-3 빌드 분리 | **구현됨** | 개인 `dist/`·`tests-private/`·`scripts-private/`·`config/*.private.*`는 `.gitignore` |
-| B-4 외부 CDN 제거 | 미구현 | SheetJS·Google Fonts는 아직 외부 호출 |
+| B-4 외부 CDN 제거 | 미구현 | SheetJS(cdnjs)·글꼴(jsDelivr의 Pretendard, 2026-11-15에 나눔고딕에서 바꿈)은 아직 외부 호출 |
 | B-5 버전 표시 | **구현됨** | 푸터 "장부선생 v0.1.0 (체험 버전/개인 빌드)" |
 | B-6 이름 적용 | **구현됨** | 제목·탭·헤더·칩·푸터 |
 | B-7 브랜드 | **구현됨** | 헤더 로고(인라인 SVG), 파비콘(데이터 주소) |

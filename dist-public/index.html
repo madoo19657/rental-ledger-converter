@@ -5,12 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>장부선생 — 간편장부를 복식부기로</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20width%3D%2264%22%20height%3D%2264%22%20role%3D%22img%22%20aria-label%3D%22%EC%9E%A5%EB%B6%80%EC%84%A0%EC%83%9D%22%3E%3Ctitle%3E%EC%9E%A5%EB%B6%80%EC%84%A0%EC%83%9D%3C%2Ftitle%3E%3Cg%20stroke%3D%22%2315151A%22%20stroke-width%3D%223.0%22%20stroke-linejoin%3D%22round%22%20stroke-linecap%3D%22round%22%3E%3Crect%20x%3D%223.0%22%20y%3D%223.0%22%20width%3D%2258.0%22%20height%3D%2258.0%22%20rx%3D%2214.0%22%20fill%3D%22%23FFD23F%22%2F%3E%3Ccircle%20cx%3D%2222.0%22%20cy%3D%2229.0%22%20r%3D%229.0%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2223.5%22%20cy%3D%2230.0%22%20r%3D%223.2%22%20fill%3D%22%2315151A%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2242.0%22%20cy%3D%2229.0%22%20r%3D%229.0%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2243.5%22%20cy%3D%2230.0%22%20r%3D%223.2%22%20fill%3D%22%2315151A%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M26%2045q6%205%2012%200%22%20transform%3D%22scale(1.0)%22%20fill%3D%22none%22%20stroke-width%3D%223%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* ───────── 디자인 토큰 ─────────
-   네이버 블로그 서식 기준(나눔고딕, 회녹색 포인트, 채도 높은 초록 지양)을 따르되
+   글꼴은 Pretendard, 포인트는 짙은 청록(채도 높은 초록 지양).
    금융·세무 도구에 맞게 위계·여백·대비를 정리했다. */
 :root {
   --bg: #f4f2ed; --card: #fff; --ink: #1f2a2e; --muted: #5f6b6a;
@@ -21,7 +20,7 @@
   --err: #c0392b; --err-soft: #fdecea; --ok: #1f7a5c; --assumed: #fffaf8;
   color-scheme: light;
   --radius: 16px; --shadow: 0 1px 2px rgba(40,36,24,.04);
-  --font: "Nanum Gothic", "나눔고딕", "Malgun Gothic", -apple-system, "Segoe UI", sans-serif;
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -1615,7 +1614,7 @@ if (!E) {
 }
 var EDITION = "public"; // 'public'(체험 버전) | 'private'(개인 빌드, 잠금 없음)
 var APP_VERSION = "0.1.0";
-var LICENSE_ENDPOINT = "https://jangbu-license.madoo.workers.dev"; // 이용권 확인 서버 주소(Phase 1). 비어 있으면 확인할 수 없다
+var LICENSE_ENDPOINT = ""; // 이용권 확인 서버 주소(Phase 1). 비어 있으면 확인할 수 없다
 var PURCHASE_URL = "#";
 var DEFAULTS = {"year":2025,"site":"사업장1","vatMode":"exclude","deemedRentMode":"recompute","building":{"cost":300000000,"acquiredOn":"2020-01-01","usefulLifeYears":40,"residualRate":0.1,"accumDepOpening":0,"totalArea":1,"depositArea":1,"landCost":0},"openingBalances":{"cash":0,"deposit":20000000,"loans":[{"lender":"은행","principal":100000000}]},"deposits":[{"date":"2025-01-01","amount":20000000}],"depositInterestIncome":0,"ownerFlows":[],"loanRepayments":[],"credit":null,"assumptions":["예시용 임시값입니다(건물 3억 원, 보증금 2천만 원, 대출 1억 원 등). 모두 실제 값으로 바꾸세요.","기초 현금 0원, 사업주 인출·투입 없음, 부가세는 제외(공급가액 기준): 가정","연면적 = 보증금 받은 면적(비율 1): 가정"],"industryCode":"701201","filingType":"11"};
 var PARAMS = {"year":2025,"deemedRentRate":0.031,"bookkeepingCredit":{"rate":0.2,"cap":1000000},"standardTaxCredit":70000,"source":"이자율 3.10%는 첨부 신고서(별지 제53호)의 값. 기장세액공제율·한도는 별지 제10호의3 서식. 표준세액공제 70,000원은 신고서(S1) 세액공제명세서와 블로그(S12)의 사업소득만 있는 경우. 법령 조문은 세무사 확인 전."};

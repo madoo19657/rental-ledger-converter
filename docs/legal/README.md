@@ -23,7 +23,7 @@
 - 서버에는 이메일·코드·기기 값의 **해시**만 저장한다. 접속 주소(IP)는 해시로 시간당 횟수만 세고 약 1시간 뒤 사라진다(`server/worker.mjs`의 `bumpIp`, 3700초).
 - 이용권 토큰과 기기 값은 이용자 브라우저의 로컬 저장소(localStorage)에 둔다.
 - 운영자 PC에는 발급 장부(이메일 원문·코드·주문번호 메모)가 있다(`scripts-private/license-ledger.json`).
-- 화면은 Cloudflare(호스팅), Google Fonts, cdnjs(SheetJS)를 불러온다. 이용자 접속 정보가 이 서비스로 전달될 수 있다. 외부 CDN 제거(PRD B-4)를 하면 방침에서 줄인다.
+- 화면은 Cloudflare(호스팅), jsDelivr(글꼴 Pretendard, 2026-11-15에 Google Fonts에서 바꿈), cdnjs(SheetJS)를 불러온다. 이용자 접속 정보가 이 서비스로 전달될 수 있다. 외부 CDN 제거(PRD B-4)를 하면 방침에서 줄인다.
 - 이용 기간: 2026년 귀속 신고 시즌, 2027-06-30까지. 가격 50,000원. 기기 3대.
 
 ## 확인할 것 (미확인)
