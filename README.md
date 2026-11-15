@@ -73,3 +73,10 @@ Node 20 이상. 외부 패키지 없음.
 - 한 번에 사업장(시트) 하나만 계산한다. 합산·사업장별 비교는 v1.1.
 - 법정 서식 그대로의 PDF 레이아웃은 아직 없다. 화면 표와 브라우저 인쇄(PDF 저장)로 대신한다.
 - 실제 엑셀 파일 업로드는 같은 구조의 시험 파일로 확인했고, 사용자의 실제 파일로는 아직 확인하지 않았다.
+
+## 페이지 아이콘 규칙 (2026-11-15)
+
+- 모든 HTML 페이지의 `<head>`에 탭 아이콘(`rel="icon"`), 홈 화면 아이콘(`apple-touch-icon`, 180px), `manifest`(192·512)를 넣는다. 원본은 `brand/favicon.svg`와 `brand/png/home-icon-*.png`.
+- **Worker(`jangbu-license`, `jangbu-refund`)**: `/apple-touch-icon.png`처럼 절대 경로. `scripts/deploy-server.js`, `scripts/deploy-refund.js`가 파일을 만든다.
+- **GitHub Pages(저장소 루트 `index.html`)**: 저장소 이름 아래(`/rental-ledger-converter/`)에 올라가므로 **상대 경로**(`apple-touch-icon.png`, `manifest.webmanifest`)를 쓰고 아이콘 파일을 저장소 루트에 둔다. 절대 경로로 쓰면 404가 되어 홈 화면 아이콘이 안 나온다.
+- 배포 뒤에는 아이콘·매니페스트 주소가 200인지 확인한다.
