@@ -24,7 +24,7 @@ fs.copyFileSync(path.join(root, 'brand/png/home-icon-180.png'), path.join(root, 
 fs.copyFileSync(path.join(root, 'brand/png/home-icon-192.png'), path.join(root, 'server/public/icon-192.png'));
 fs.copyFileSync(path.join(root, 'brand/png/home-icon-512.png'), path.join(root, 'server/public/icon-512.png'));
 fs.writeFileSync(path.join(root, 'server/public/manifest.webmanifest'), JSON.stringify({
-  name: '장부선생', short_name: '장부선생', start_url: '/', display: 'browser', background_color: '#f4f2ed', theme_color: '#1f5f5b',
+  name: '장부선생 장부변환', short_name: '장부변환', start_url: '/', display: 'browser', background_color: '#1f5f5b', theme_color: '#1f5f5b',
   icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
 }));
 // 이월결손금 환급점검(단일 HTML 프로토타입)은 /refund/ 에서 열린다. 이용약관 링크는 같은 사이트의 /legal/ 을 가리키게 바꾼다.
