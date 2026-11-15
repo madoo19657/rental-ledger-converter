@@ -76,6 +76,8 @@ Node 20 이상. 외부 패키지 없음.
 
 ## 사이트 주소 구성 (2026-11-15)
 
+**서비스 주소는 `https://jangbu.madoo.kr`** 이다(가비아에서 산 `madoo.kr`을 Cloudflare에 연결, 워커 `jangbu-license`의 사용자 지정 도메인). 배포: `JANGBU_SERVER_URL=https://jangbu.madoo.kr node scripts/deploy-server.js`. 옛 주소 `jangbu-license.madoo.workers.dev`도 당분간 같이 열려 있다.
+
 `scripts/deploy-server.js`가 `server/public`을 아래처럼 만든 뒤 올린다. `--dry`를 붙이면 올리지 않고 폴더만 만든다(로컬 확인용).
 
 | 주소 | 내용 | 원본 |

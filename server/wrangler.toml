@@ -3,6 +3,10 @@ name = "jangbu-license"
 main = "worker.mjs"
 compatibility_date = "2024-11-01"
 
+# 서비스 주소: jangbu.madoo.kr (Cloudflare에 등록한 madoo.kr의 하위 주소). 옛 주소 jangbu-license.madoo.workers.dev 도 당분간 열어 둔다
+workers_dev = true
+routes = [{ pattern = "jangbu.madoo.kr", custom_domain = true }]
+
 # 체험 화면(공개 빌드)을 같은 주소에서 내려준다. scripts/deploy-server.js가 server/public을 채운다
 [assets]
 directory = "./public"
@@ -12,5 +16,5 @@ binding = "LICENSES"
 id = "0ee5f32cc998444ca44311a3c2edaec6"
 
 [vars]
-# 체험 화면이 올라간 주소(CORS 허용). 예: "https://내도메인.example"
-ALLOWED_ORIGIN = "https://jangbu-license.madoo.workers.dev"
+# 체험 화면이 올라간 주소(CORS 허용). 쉼표로 여러 개를 적을 수 있다. 옛 주소는 새 주소로 넘기기 전까지만 둔다
+ALLOWED_ORIGIN = "https://jangbu.madoo.kr,https://jangbu-license.madoo.workers.dev"

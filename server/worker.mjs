@@ -107,9 +107,10 @@ const clearFail = (env, eh) => env.LICENSES.delete(`fl:${eh}`);
 // ── 응답 ──
 function cors(env, req) {
   const origin = req.headers.get('Origin');
-  const allow = env.ALLOWED_ORIGIN || '';
+  const allow = env.ALLOWED_ORIGIN || ''; // 주소 하나, 또는 쉼표로 나눈 여러 주소(주소를 옮기는 동안 옛 주소도 허용할 때)
   const h = { 'Vary': 'Origin' };
-  if (allow === '*' || (origin && origin === allow)) h['Access-Control-Allow-Origin'] = allow === '*' ? '*' : origin;
+  const list = allow.split(',').map((s) => s.trim()).filter(Boolean);
+  if (allow === '*' || (origin && list.includes(origin))) h['Access-Control-Allow-Origin'] = allow === '*' ? '*' : origin;
   h['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS';
   h['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
   h['Access-Control-Max-Age'] = '600';
