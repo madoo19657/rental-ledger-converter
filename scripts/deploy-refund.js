@@ -21,11 +21,11 @@ const html = fs.readFileSync(path.join(root, 'prototype/refund-check.html'), 'ut
 fs.writeFileSync(path.join(pub, 'index.html'), html);
 fs.copyFileSync(path.join(root, 'og-image.png'), path.join(pub, 'og-image.png'));
 fs.cpSync(path.join(root, 'dist-public/legal'), path.join(pub, 'legal'), { recursive: true });
-fs.copyFileSync(path.join(root, 'brand/png/home-icon-180.png'), path.join(pub, 'apple-touch-icon.png'));
-fs.copyFileSync(path.join(root, 'brand/png/home-icon-192.png'), path.join(pub, 'icon-192.png'));
-fs.copyFileSync(path.join(root, 'brand/png/home-icon-512.png'), path.join(pub, 'icon-512.png'));
+fs.copyFileSync(path.join(root, 'brand/png/refund-icon-180.png'), path.join(pub, 'apple-touch-icon.png'));
+fs.copyFileSync(path.join(root, 'brand/png/refund-icon-192.png'), path.join(pub, 'icon-192.png'));
+fs.copyFileSync(path.join(root, 'brand/png/refund-icon-512.png'), path.join(pub, 'icon-512.png'));
 fs.writeFileSync(path.join(pub, 'manifest.webmanifest'), JSON.stringify({
-  name: '이월결손금 환급점검 | 장부선생', short_name: '환급점검', start_url: '/', display: 'browser', background_color: '#f8fafb', theme_color: '#0f9488',
+  name: '이월결손금 환급점검 | 장부선생', short_name: '환급점검', start_url: '/', display: 'browser', background_color: '#f8fafb', theme_color: '#e8753b',
   icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
 }));
 fs.writeFileSync(path.join(pub, '_headers'), '/*\n  Cache-Control: no-cache\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n');
