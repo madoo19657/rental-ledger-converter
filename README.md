@@ -88,6 +88,7 @@ Node 20 이상. 외부 패키지 없음.
 | `/legal/` | 이용약관·처리방침·환불 안내 | `dist-public/legal/` |
 | `/api/*` | 이용권 서버 | `server/worker.mjs` |
 
+- `madoo.kr`과 `www.madoo.kr`은 별도 Worker `madoo-redirect`(`redirect-site/`)가 `jangbu.madoo.kr`로 넘긴다(임시 이동 302). 배포: `redirect-site` 폴더에서 `npx wrangler deploy`.
 - 분양견적은 다른 프로젝트(`quote-maker`)라 대문에서 그 주소로 링크만 건다. 주소는 `JANGBU_QUOTE_URL`로 바꿀 수 있다.
 - 장부변환 화면의 아이콘·매니페스트·약관 링크는 상대 경로라 `/convert/` 아래에 같이 둔다.
 - 원본의 미리보기 태그에 적힌 `https://jangbu-license.madoo.workers.dev`는 배포 때 `JANGBU_SERVER_URL`로 바뀐다.

@@ -1,0 +1,10 @@
+# madoo.kr, www.madoo.kr → jangbu.madoo.kr 로 넘기는 Worker. 서버 로직·저장소·비밀값이 없다.
+#   배포: (redirect-site 폴더에서) npx wrangler deploy
+name = "madoo-redirect"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = false
+routes = [
+  { pattern = "madoo.kr", custom_domain = true },
+  { pattern = "www.madoo.kr", custom_domain = true },
+]
